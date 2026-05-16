@@ -1,9 +1,6 @@
 import json
 import math
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 import smtplib
 import time
 import urllib.parse
@@ -14,6 +11,7 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, Header, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +19,8 @@ from pydantic import BaseModel
 from sqlalchemy import Column, Float, Integer, String, Text, TIMESTAMP, Time, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
+
+load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
@@ -47,22 +47,6 @@ SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
 app = FastAPI(title="MappingCrimeFrance API")
-
-Base.metadata.create_all(bind=engine)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://mappingcrimefrance.fr",
-        "https://www.mappingcrimefrance.fr",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 class IncidentDB(Base):
@@ -93,6 +77,25 @@ class SubscriberDB(Base):
     radius_km = Column(Integer, default=10)
     status = Column(String(20), default="pending")
     created_at = Column(TIMESTAMP, server_default=func.now())
+
+
+# IMPORTANT : créer les tables APRÈS la définition des modèles
+Base.metadata.create_all(bind=engine)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://mappingcrimefrance.fr",
+        "https://www.mappingcrimefrance.fr",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 class IncidentCreate(BaseModel):
@@ -290,14 +293,8 @@ def get_incidents(
 @app.post("/upload")
 async def upload_media(file: UploadFile = File(...)):
     allowed_extensions = {
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".webp",
-        ".gif",
-        ".mp4",
-        ".mov",
-        ".webm",
+        ".jpg", ".jpeg", ".png", ".webp", ".gif",
+        ".mp4", ".mov", ".webm",
     }
 
     extension = Path(file.filename or "").suffix.lower()

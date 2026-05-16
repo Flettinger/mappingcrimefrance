@@ -48,6 +48,8 @@ Base = declarative_base()
 
 app = FastAPI(title="MappingCrimeFrance API")
 
+Base.metadata.create_all(bind=engine)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

@@ -559,12 +559,12 @@ export default function Home() {
 
         <section className="flex-1 relative">
           <MapContainer
-            ref={setMap as any}
-            center={[46.603354, 1.888334]}
-            zoom={6}
-            maxZoom={20}
-            className="h-full w-full"
-          >
+  key={mapStyle}
+  center={[46.603354, 1.888334]}
+  zoom={6}
+  maxZoom={20}
+  className="h-full w-full"
+>          
             {mapStyle === "street" ? (
               <TileLayer
                 attribution="&copy; OpenStreetMap"

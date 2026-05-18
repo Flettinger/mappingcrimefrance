@@ -55,7 +55,7 @@ type Incident = {
   media_type?: string | null;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 const TURNSTILE_SITE_KEY = "0x4AAAAAADOpg7umNlyQBlo-";
 
 export default function Home() {
@@ -63,12 +63,10 @@ export default function Home() {
   const [showAlertForm, setShowAlertForm] = useState(false);
 
   const [reporterEmail, setReporterEmail] = useState("");
-
   const [streetNumber, setStreetNumber] = useState("");
   const [streetName, setStreetName] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
-
   const [description, setDescription] = useState("");
   const [type, setType] = useState("Vol simple");
   const [incidentTime, setIncidentTime] = useState("");
@@ -86,12 +84,10 @@ export default function Home() {
   const [searchSector, setSearchSector] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [icons, setIcons] = useState<IncidentIcons | null>(null);
-
   const [map, setMap] = useState<any>(null);
   const [selectedPosition, setSelectedPosition] =
     useState<[number, number] | null>(null);
@@ -140,25 +136,19 @@ export default function Home() {
   }, [showForm, turnstileLoaded]);
 
   async function loadIncidents() {
-    try {
-      const response = await fetch(`${API_URL}/incidents`);
-      const data = await response.json();
-      setIncidents(data);
-    } catch (error) {
-      console.error("Erreur chargement incidents:", error);
-    }
+    const response = await fetch(`${API_URL}/incidents`);
+    const data = await response.json();
+    setIncidents(data);
   }
 
   async function searchIncidents() {
     const params = new URLSearchParams();
-
     if (searchSector.trim()) params.append("sector", searchSector.trim());
     if (dateFrom) params.append("date_from", dateFrom);
     if (dateTo) params.append("date_to", dateTo);
 
     const response = await fetch(`${API_URL}/incidents?${params.toString()}`);
     const data = await response.json();
-
     setIncidents(data);
 
     if (data.length > 0) {
@@ -170,7 +160,6 @@ export default function Home() {
     setSearchSector("");
     setDateFrom("");
     setDateTo("");
-
     await loadIncidents();
 
     if (map) {
@@ -207,10 +196,7 @@ export default function Home() {
 
   async function uploadMedia() {
     if (!mediaFile) {
-      return {
-        media_url: null,
-        media_type: null,
-      };
+      return { media_url: null, media_type: null };
     }
 
     const formData = new FormData();
@@ -359,7 +345,6 @@ export default function Home() {
     }
 
     alert("Un email de confirmation vous a été envoyé.");
-
     setSubscriberEmail("");
     setSubscriberAddress("");
     setShowAlertForm(false);
@@ -391,32 +376,32 @@ export default function Home() {
   }
 
   return (
-    <main className="h-screen w-full bg-black text-white overflow-hidden">
+    <main className="min-h-screen w-full bg-black text-white md:h-screen md:overflow-hidden">
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
         onLoad={() => setTurnstileLoaded(true)}
       />
 
-      <header className="h-[170px] bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-6 py-4 z-[2000] relative">
-        <div className="flex items-start justify-between gap-6 mb-5">
+      <header className="bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:h-[170px] md:px-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6 md:mb-5">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
               Mapping<span className="text-red-500">CrimeFrance</span>
             </h1>
 
-            <p className="text-sm text-gray-300 mt-1">
+            <p className="text-xs md:text-sm text-gray-300 mt-1">
               Cartographie citoyenne des incidents en France
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => {
                 setShowForm(true);
                 setShowAlertForm(false);
               }}
-              className="bg-red-600 hover:bg-red-700 px-5 py-3 rounded-lg font-bold shadow-lg"
+              className="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-lg font-bold shadow-lg"
             >
               Déclarer un incident
             </button>
@@ -426,19 +411,16 @@ export default function Home() {
                 setShowAlertForm(true);
                 setShowForm(false);
               }}
-              className="bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-lg font-bold shadow-lg"
+              className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg font-bold shadow-lg"
             >
               Recevoir des alertes
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-[1.6fr_0.85fr_0.85fr_0.75fr_0.75fr_1fr] gap-4 items-end">
+        <div className="grid grid-cols-1 gap-3 mt-4 md:mt-0 md:grid-cols-[1.6fr_0.85fr_0.85fr_0.75fr_0.75fr_1fr] md:gap-4 md:items-end">
           <div>
-            <label className="block text-sm font-semibold mb-2">
-              Recherche
-            </label>
-
+            <label className="block text-sm font-semibold mb-2">Recherche</label>
             <input
               placeholder="Ville, village ou secteur..."
               value={searchSector}
@@ -451,7 +433,6 @@ export default function Home() {
             <label className="block text-sm font-semibold mb-2">
               Date début
             </label>
-
             <input
               type="date"
               value={dateFrom}
@@ -462,7 +443,6 @@ export default function Home() {
 
           <div>
             <label className="block text-sm font-semibold mb-2">Date fin</label>
-
             <input
               type="date"
               value={dateTo}
@@ -489,7 +469,6 @@ export default function Home() {
             <label className="block text-sm font-semibold mb-2">
               Affichage carte
             </label>
-
             <select
               value={mapStyle}
               onChange={(e) =>
@@ -504,9 +483,9 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-170px)]">
-        <aside className="w-[410px] bg-black border-r border-gray-800 p-4 overflow-y-auto z-[1000]">
-          <h2 className="text-2xl font-bold mb-4">
+      <div className="flex flex-col md:flex-row md:h-[calc(100vh-170px)]">
+        <aside className="order-2 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">
+          <h2 className="text-xl md:text-2xl font-bold mb-4">
             Incidents publiés ({incidents.length})
           </h2>
 
@@ -557,14 +536,15 @@ export default function Home() {
           </div>
         </aside>
 
-        <section className="flex-1 relative">
+        <section className="order-1 md:order-2 flex-1 relative h-[58vh] md:h-full">
           <MapContainer
-  key={mapStyle}
-  center={[46.603354, 1.888334]}
-  zoom={6}
-  maxZoom={20}
-  className="h-full w-full"
->          
+            key={mapStyle}
+            ref={setMap as any}
+            center={[46.603354, 1.888334]}
+            zoom={6}
+            maxZoom={20}
+            className="h-full w-full"
+          >
             {mapStyle === "street" ? (
               <TileLayer
                 attribution="&copy; OpenStreetMap"
@@ -607,10 +587,12 @@ export default function Home() {
               ))}
           </MapContainer>
 
-          <div className="absolute top-6 right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-3 shadow-xl w-[220px]">
-            <h3 className="font-bold mb-3 text-base">Légende</h3>
+          <div className="absolute top-3 right-3 md:top-6 md:right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-2 md:p-3 shadow-xl w-[170px] md:w-[220px] max-h-[240px] overflow-y-auto">
+            <h3 className="font-bold mb-2 md:mb-3 text-sm md:text-base">
+              Légende
+            </h3>
 
-            <div className="space-y-2 text-xs">
+            <div className="space-y-1.5 md:space-y-2 text-[10px] md:text-xs">
               {icons && (
                 <>
                   <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
@@ -647,10 +629,10 @@ export default function Home() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-6">
-          <div className="bg-gray-950 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-3 md:p-6">
+          <div className="bg-gray-950 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-4 md:p-6">
             <div className="flex justify-between items-center mb-5">
-              <h2 className="text-2xl font-bold text-red-500">
+              <h2 className="text-xl md:text-2xl font-bold text-red-500">
                 Déclaration citoyenne
               </h2>
 
@@ -673,12 +655,10 @@ export default function Home() {
 
             <p className="text-xs text-gray-400 mb-4">
               Votre email restera confidentiel et ne sera jamais affiché
-              publiquement. Il pourra uniquement être utilisé pour la modération
-              ou pour vous contacter concernant votre signalement.
+              publiquement.
             </p>
 
             <label className="block mb-2">Type d’incident</label>
-
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
@@ -712,7 +692,7 @@ export default function Home() {
               className="w-full p-3 rounded bg-black border border-gray-700 mb-4"
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input
                 placeholder="Numéro"
                 value={streetNumber}
@@ -800,10 +780,10 @@ export default function Home() {
       )}
 
       {showAlertForm && (
-        <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-6">
-          <div className="bg-gray-950 border border-gray-700 rounded-xl w-full max-w-lg p-6">
+        <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-3 md:p-6">
+          <div className="bg-gray-950 border border-gray-700 rounded-xl w-full max-w-lg p-4 md:p-6">
             <div className="flex justify-between items-center mb-5">
-              <h2 className="text-2xl font-bold text-blue-500">
+              <h2 className="text-xl md:text-2xl font-bold text-blue-500">
                 Alertes incidents
               </h2>
 
@@ -848,21 +828,15 @@ export default function Home() {
   );
 }
 
-function LegendItem({
-  icon,
-  label,
-}: {
-  icon: any;
-  label: string;
-}) {
+function LegendItem({ icon, label }: { icon: any; label: string }) {
   if (!icon) return null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 md:gap-3">
       <img
         src={icon.options.iconUrl}
         alt={label}
-        className="w-6 h-6 object-contain"
+        className="w-5 h-5 md:w-6 md:h-6 object-contain"
       />
       <span>{label}</span>
     </div>

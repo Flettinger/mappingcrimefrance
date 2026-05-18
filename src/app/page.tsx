@@ -23,22 +23,22 @@ declare global {
   }
 }
 
-const MapContainer = dynamic(
+const MapContainer = dynamic<any>(
   () => import("react-leaflet").then((m) => m.MapContainer),
   { ssr: false }
 );
 
-const TileLayer = dynamic(
+const TileLayer = dynamic<any>(
   () => import("react-leaflet").then((m) => m.TileLayer),
   { ssr: false }
 );
 
-const Marker = dynamic(
+const Marker = dynamic<any>(
   () => import("react-leaflet").then((m) => m.Marker),
   { ssr: false }
 );
 
-const Popup = dynamic(
+const Popup = dynamic<any>(
   () => import("react-leaflet").then((m) => m.Popup),
   { ssr: false }
 );

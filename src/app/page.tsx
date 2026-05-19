@@ -387,16 +387,19 @@ export default function Home() {
       <header className="bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:h-[170px] md:px-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6 md:mb-5">
           <div>
-            <h1 className="text-5xl font-bold">
-  <span className="text-blue-400">Mapping</span>
-  <span className="text-white">Crime</span>
-  <span className="text-red-500">France</span>
-</h1>
+            <div className="flex flex-col items-start">
+  <h1 className="text-5xl font-bold">
+    <span className="text-blue-500">Mapping</span>
+    <span className="text-white">Crime</span>
+    <span className="text-red-500">France</span>
+  </h1>
 
-            <p className="text-xs md:text-sm text-gray-300 mt-1">
-              Cartographie des crimes et délits en France
-            </p>
-          </div>
+  <div className="w-full h-px bg-white my-2"></div>
+
+  <p className="text-xs md:text-sm text-gray-300">
+    Cartographie des crimes et délits en France
+  </p>
+</div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <button

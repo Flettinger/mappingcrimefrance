@@ -548,3 +548,40 @@ def get_admin_subscribers(x_admin_token: str = Header(None)):
 
     db.close()
     return subscribers
+
+@app.put("/admin/subscribers/{subscriber_id}/confirm")
+def admin_confirm_subscriber(subscriber_id: int, x_admin_token: str = Header(None)):
+    if x_admin_token != ADMIN_TOKEN:
+        return {"error": "Accès refusé"}
+
+    db = SessionLocal()
+    subscriber = db.query(SubscriberDB).filter(SubscriberDB.id == subscriber_id).first()
+
+    if not subscriber:
+        db.close()
+        return {"error": "Abonné introuvable"}
+
+    subscriber.status = "confirmed"
+    db.commit()
+    db.close()
+
+    return {"message": "Abonné confirmé"}
+
+
+@app.delete("/admin/subscribers/{subscriber_id}")
+def admin_delete_subscriber(subscriber_id: int, x_admin_token: str = Header(None)):
+    if x_admin_token != ADMIN_TOKEN:
+        return {"error": "Accès refusé"}
+
+    db = SessionLocal()
+    subscriber = db.query(SubscriberDB).filter(SubscriberDB.id == subscriber_id).first()
+
+    if not subscriber:
+        db.close()
+        return {"error": "Abonné introuvable"}
+
+    db.delete(subscriber)
+    db.commit()
+    db.close()
+
+    return {"message": "Abonné supprimé"}

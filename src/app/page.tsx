@@ -387,9 +387,11 @@ export default function Home() {
       <header className="bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:h-[170px] md:px-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6 md:mb-5">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              Mapping<span className="text-red-500">CrimeFrance</span>
-            </h1>
+            <h1 className="text-5xl font-bold">
+  <span className="text-blue-400">Mapping</span>
+  <span className="text-white">Crime</span>
+  <span className="text-red-500">France</span>
+</h1>
 
             <p className="text-xs md:text-sm text-gray-300 mt-1">
               Cartographie citoyenne des incidents en France

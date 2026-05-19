@@ -840,14 +840,14 @@ export default function Home() {
             />
 
             <button
-              onClick={subscribeToAlerts}
-              className="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold"
-            >
-              M’inscrire aux alertes
-            </button>
+  onClick={subscribeToAlerts}
+  className="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold"
+>
+  {"M'inscrire aux alertes"}
+</button>
           </div>
         </div>
-      )}
+
     </main>
   );
 

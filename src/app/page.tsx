@@ -394,7 +394,7 @@ export default function Home() {
 </h1>
 
             <p className="text-xs md:text-sm text-gray-300 mt-1">
-              Cartographie citoyenne des incidents en France
+              Cartographie des crimes et délits en France
             </p>
           </div>
 

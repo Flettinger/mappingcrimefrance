@@ -385,111 +385,112 @@ export default function Home() {
       />
 
       <header className="bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:h-[170px] md:px-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6 md:mb-5">
-          <div>
-            <div className="flex flex-col items-start">
-  <h1 className="text-5xl font-bold leading-none">
-    <span className="text-blue-500">Mapping</span>
-    <span className="text-white">Crime</span>
-    <span className="text-red-500">France</span>
-  </h1>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
+          <div className="w-full md:w-[650px] text-center">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+              <span className="text-blue-500">Mapping</span>
+              <span className="text-white">Crime</span>
+              <span className="text-red-500">France</span>
+            </h1>
 
-  <div className="w-full h-px bg-white my-2" />
+            <hr className="border-white my-3 w-full" />
 
-  <p className="text-xs md:text-sm text-gray-300">
-    Cartographie des crimes et délits en France
-  </p>
-</div>
+            <p className="text-white text-base md:text-lg">
+              Cartographie des crimes et délits en France
+            </p>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 mt-3 md:hidden">
+              <button
+                onClick={() => setShowForm(true)}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg"
+              >
+                Déclarer un délit ou un crime
+              </button>
+
+              <button
+                onClick={() => setShowAlertForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg"
+              >
+                Inscription pour recevoir des alertes
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 grid grid-cols-1 gap-3 md:grid-cols-[1.6fr_0.85fr_0.85fr_0.75fr_0.75fr_1fr] md:gap-4 md:items-end">
+            <div>
+              <label className="block text-sm font-semibold mb-2">Recherche</label>
+              <input
+                placeholder="Ville, village ou secteur..."
+                value={searchSector}
+                onChange={(e) => setSearchSector(e.target.value)}
+                className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Date début</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Date fin</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
+              />
+            </div>
+
             <button
-              onClick={() => {
-                setShowForm(true);
-                setShowAlertForm(false);
-              }}
-              className="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-lg font-bold shadow-lg"
+              onClick={searchIncidents}
+              className="h-11 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
+            >
+              Rechercher
+            </button>
+
+            <button
+              onClick={resetSearch}
+              className="h-11 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold"
+            >
+              Réinitialiser
+            </button>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Affichage carte</label>
+              <select
+                value={mapStyle}
+                onChange={(e) => setMapStyle(e.target.value as "street" | "satellite")}
+                className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
+              >
+                <option value="street">Carte classique</option>
+                <option value="satellite">Satellite</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="hidden md:flex gap-3 items-end pt-[86px]">
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg whitespace-nowrap"
             >
               Déclarer un délit ou un crime
             </button>
 
             <button
-              onClick={() => {
-                setShowAlertForm(true);
-                setShowForm(false);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg font-bold shadow-lg"
+              onClick={() => setShowAlertForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg whitespace-nowrap"
             >
               Inscription pour recevoir des alertes
             </button>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 gap-3 mt-4 md:mt-0 md:grid-cols-[1.6fr_0.85fr_0.85fr_0.75fr_0.75fr_1fr] md:gap-4 md:items-end">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Recherche</label>
-            <input
-              placeholder="Ville, village ou secteur..."
-              value={searchSector}
-              onChange={(e) => setSearchSector(e.target.value)}
-              className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2">
-              Date début
-            </label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2">Date fin</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
-            />
-          </div>
-
-          <button
-            onClick={searchIncidents}
-            className="h-11 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
-          >
-            Rechercher
-          </button>
-
-          <button
-            onClick={resetSearch}
-            className="h-11 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold"
-          >
-            Réinitialiser
-          </button>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2">
-              Affichage carte
-            </label>
-            <select
-              value={mapStyle}
-              onChange={(e) =>
-                setMapStyle(e.target.value as "street" | "satellite")
-              }
-              className="w-full h-11 px-4 rounded-lg bg-[#111] border border-gray-700 text-white"
-            >
-              <option value="street">Carte classique</option>
-              <option value="satellite">Satellite</option>
-                    </select>
-           </div>
-    </div>
-  </div>
-
-</header>
+      </header>
 
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-170px)]">
         <aside className="order-2 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">
@@ -850,16 +851,14 @@ export default function Home() {
             />
 
             <button
-  onClick={subscribeToAlerts}
-  className="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold"
->
-  {"M'inscrire aux alertes"}
-</button>
+              onClick={subscribeToAlerts}
+              className="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold"
+            >
+              {"M'inscrire aux alertes"}
+            </button>
           </div>
         </div>
-
       )}
-
     </main>
   );
 }

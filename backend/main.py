@@ -532,3 +532,19 @@ def delete_incident(incident_id: int, x_admin_token: str = Header(None)):
     db.close()
 
     return {"message": "Incident supprimé"}
+
+@app.get("/admin/subscribers")
+def get_admin_subscribers(x_admin_token: str = Header(None)):
+    if x_admin_token != ADMIN_TOKEN:
+        return {"error": "Accès refusé"}
+
+    db = SessionLocal()
+
+    subscribers = (
+        db.query(SubscriberDB)
+        .order_by(SubscriberDB.created_at.desc())
+        .all()
+    )
+
+    db.close()
+    return subscribers

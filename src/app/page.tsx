@@ -388,13 +388,13 @@ export default function Home() {
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6 md:mb-5">
           <div>
             <div className="flex flex-col items-start">
-  <h1 className="text-5xl font-bold">
+  <h1 className="text-5xl font-bold leading-none">
     <span className="text-blue-500">Mapping</span>
     <span className="text-white">Crime</span>
     <span className="text-red-500">France</span>
   </h1>
 
-  <div className="w-full h-px bg-white my-2"></div>
+  <div className="w-full h-px bg-white my-2" />
 
   <p className="text-xs md:text-sm text-gray-300">
     Cartographie des crimes et délits en France
@@ -484,10 +484,12 @@ export default function Home() {
             >
               <option value="street">Carte classique</option>
               <option value="satellite">Satellite</option>
-            </select>
-          </div>
-        </div>
-      </header>
+                    </select>
+           </div>
+    </div>
+  </div>
+
+</header>
 
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-170px)]">
         <aside className="order-2 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">

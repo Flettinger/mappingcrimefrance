@@ -651,6 +651,9 @@ export default function Home() {
     </div>
   </div>
 )}
+        </section>
+      </div>
+
 
       {showForm && (
         <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-3 md:p-6">
@@ -848,8 +851,11 @@ export default function Home() {
           </div>
         </div>
 
+      )}
+
     </main>
   );
+}
 
 function LegendItem({ icon, label }: { icon: any; label: string }) {
   if (!icon) return null;

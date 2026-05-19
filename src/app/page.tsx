@@ -414,7 +414,7 @@ export default function Home() {
               }}
               className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg font-bold shadow-lg"
             >
-              Recevoir des alertes
+              Inscription pour recevoir des alertes
             </button>
           </div>
         </div>

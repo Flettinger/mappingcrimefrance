@@ -850,7 +850,6 @@ export default function Home() {
       )}
     </main>
   );
-}
 
 function LegendItem({ icon, label }: { icon: any; label: string }) {
   if (!icon) return null;

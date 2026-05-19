@@ -87,6 +87,7 @@ export default function Home() {
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [showLegend, setShowLegend] = useState(false);
   const [icons, setIcons] = useState<IncidentIcons | null>(null);
   const [map, setMap] = useState<any>(null);
   const [selectedPosition, setSelectedPosition] =
@@ -587,46 +588,69 @@ export default function Home() {
               ))}
           </MapContainer>
 
-          <div className="absolute top-3 right-3 md:top-6 md:right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-2 md:p-3 shadow-xl w-[170px] md:w-[220px] max-h-[240px] overflow-y-auto">
-            <h3 className="font-bold mb-2 md:mb-3 text-sm md:text-base">
-              Légende
-            </h3>
+          {/* Légende desktop */}
+<div className="hidden md:block absolute top-6 right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-3 shadow-xl w-[220px]">
+  <h3 className="font-bold mb-3 text-base">Légende</h3>
+  <div className="space-y-2 text-xs">
+    {icons && (
+      <>
+        <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
+        <LegendItem icon={icons["Cambriolage"]} label="Cambriolage" />
+        <LegendItem icon={icons["Car-jacking"]} label="Car-jacking" />
+        <LegendItem icon={icons["Agression physique"]} label="Agression physique" />
+        <LegendItem icon={icons["Incendie volontaire"]} label="Incendie volontaire" />
+        <LegendItem icon={icons["Accident"]} label="Accident" />
+        <LegendItem icon={icons["Trafic de stupéfiants"]} label="Trafic de stupéfiants" />
+        <LegendItem icon={icons["Rodéo urbain"]} label="Rodéo urbain" />
+        <LegendItem icon={icons["Nuisances / tapage"]} label="Nuisances / tapage" />
+        <LegendItem icon={icons["Disparition inquiétante"]} label="Disparition" />
+        <LegendItem icon={icons["Homicide"]} label="Homicide" />
+      </>
+    )}
+  </div>
+</div>
 
-            <div className="space-y-1.5 md:space-y-2 text-[10px] md:text-xs">
-              {icons && (
-                <>
-                  <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
-                  <LegendItem icon={icons["Cambriolage"]} label="Cambriolage" />
-                  <LegendItem icon={icons["Car-jacking"]} label="Car-jacking" />
-                  <LegendItem
-                    icon={icons["Agression physique"]}
-                    label="Agression physique"
-                  />
-                  <LegendItem
-                    icon={icons["Incendie volontaire"]}
-                    label="Incendie volontaire"
-                  />
-                  <LegendItem icon={icons["Accident"]} label="Accident" />
-                  <LegendItem
-                    icon={icons["Trafic de stupéfiants"]}
-                    label="Trafic de stupéfiants"
-                  />
-                  <LegendItem icon={icons["Rodéo urbain"]} label="Rodéo urbain" />
-                  <LegendItem
-                    icon={icons["Nuisances / tapage"]}
-                    label="Nuisances / tapage"
-                  />
-                  <LegendItem
-                    icon={icons["Disparition inquiétante"]}
-                    label="Disparition"
-                  />
-                  <LegendItem icon={icons["Homicide"]} label="Homicide" />
-                </>
-              )}
-            </div>
-          </div>
-        </section>
+{/* Bouton légende mobile */}
+<div className="md:hidden absolute top-3 right-3 z-[1000]">
+  <button
+    onClick={() => setShowLegend(true)}
+    className="bg-black/90 border border-gray-700 text-white px-4 py-2 rounded-xl shadow-lg font-bold text-sm"
+  >
+    📍 Légende
+  </button>
+</div>
+
+{/* Popup légende mobile */}
+{showLegend && (
+  <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-4">
+    <div className="bg-gray-950 border border-gray-700 text-white rounded-2xl p-5 w-full max-w-sm max-h-[80vh] overflow-y-auto shadow-2xl">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold">Légende</h3>
+        <button onClick={() => setShowLegend(false)} className="text-2xl">
+          ✕
+        </button>
       </div>
+
+      <div className="space-y-3 text-sm">
+        {icons && (
+          <>
+            <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
+            <LegendItem icon={icons["Cambriolage"]} label="Cambriolage" />
+            <LegendItem icon={icons["Car-jacking"]} label="Car-jacking" />
+            <LegendItem icon={icons["Agression physique"]} label="Agression physique" />
+            <LegendItem icon={icons["Incendie volontaire"]} label="Incendie volontaire" />
+            <LegendItem icon={icons["Accident"]} label="Accident" />
+            <LegendItem icon={icons["Trafic de stupéfiants"]} label="Trafic de stupéfiants" />
+            <LegendItem icon={icons["Rodéo urbain"]} label="Rodéo urbain" />
+            <LegendItem icon={icons["Nuisances / tapage"]} label="Nuisances / tapage" />
+            <LegendItem icon={icons["Disparition inquiétante"]} label="Disparition" />
+            <LegendItem icon={icons["Homicide"]} label="Homicide" />
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
       {showForm && (
         <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-3 md:p-6">

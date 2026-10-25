@@ -2,7 +2,7 @@ import type { Icon } from "leaflet";
 export type IncidentIcons = Record<string, Icon>;
 
 // Shared catalogue for the form, search, map and legends.
-export const INCIDENT_TYPES = ["Vol simple", "Vol à main armée", "Car-jacking", "Cambriolage", "Tentative de cambriolage", "Agression physique", "Agression sexuelle", "Viol", "Dégradation", "Incendie volontaire", "Escroquerie", "Trafic de stupéfiants", "Rodéo urbain", "Nuisances / tapage", "Violences conjugales", "Disparition inquiétante", "Homicide"] as const;
+export const INCIDENT_TYPES = ["Vol simple", "Vol à main armée", "Car-jacking", "Cambriolage", "Tentative de cambriolage", "Agression physique", "Agression sexuelle", "Viol", "Dégradation", "Incendie volontaire", "Escroquerie", "Trafic de stupéfiants", "Rodéo urbain", "Nuisances / tapage", "Disparition inquiétante", "Homicide"] as const;
 
 const designs: Record<string, [string, string]> = {
   "Vol simple": [
@@ -60,10 +60,6 @@ const designs: Record<string, [string, string]> = {
   "Nuisances / tapage": [
     "<path d=\"M4 9h4l5-5v16l-5-5H4zM17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14\"/>",
     "#397f93"
-  ],
-  "Violences conjugales": [
-    "<path d=\"M12 21 4 13C-2 6 7 0 12 7c5-7 14-1 8 6zM7 12h3l2-3 2 6 2-3h2\"/>",
-    "#ab4f70"
   ],
   "Disparition inquiétante": [
     "<circle cx=\"10\" cy=\"10\" r=\"6\"/><path d=\"m15 15 6 6\"/><circle cx=\"10\" cy=\"9\" r=\"1.5\"/><path d=\"M7 13a3 3 0 0 1 6 0\"/>",

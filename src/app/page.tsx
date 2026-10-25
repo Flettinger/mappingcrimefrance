@@ -382,7 +382,7 @@ export default function Home() {
   }
   const addIncident = () => runSubmission(sendIncident);
   const subscribeToAlerts = () => runSubmission(sendSubscription);
-  const visibleIncidents = incidents.filter((incident) => incident.type !== "Accident" && (!category || incident.type === category));
+  const visibleIncidents = incidents.filter((incident) => !["Accident", "Violences conjugales"].includes(incident.type) && (!category || incident.type === category));
 
   useEffect(() => {
     if (!showForm && !showAlertForm && !showLegend) return;

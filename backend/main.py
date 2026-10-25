@@ -6,7 +6,7 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional
@@ -283,11 +283,27 @@ def get_incidents(
         query = query.filter(IncidentDB.created_at >= datetime.fromisoformat(date_from))
 
     if date_to:
-        query = query.filter(IncidentDB.created_at <= datetime.fromisoformat(date_to))
+        query = query.filter(IncidentDB.created_at < datetime.fromisoformat(date_to) + timedelta(days=1))
 
     incidents = query.order_by(IncidentDB.created_at.desc()).all()
+    # Expose only public fields; reporter contact details stay in administration.
+    public_incidents = [
+        {
+            "id": incident.id,
+            "type": incident.type,
+            "address": incident.address,
+            "description": incident.description,
+            "latitude": incident.latitude,
+            "longitude": incident.longitude,
+            "incident_time": incident.incident_time,
+            "media_url": incident.media_url,
+            "media_type": incident.media_type,
+            "created_at": incident.created_at,
+        }
+        for incident in incidents
+    ]
     db.close()
-    return incidents
+    return public_incidents
 
 
 @app.post("/upload")

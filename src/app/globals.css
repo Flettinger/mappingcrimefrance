@@ -24,3 +24,74 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Mapping Crime France — interface cartographique */
+.crime-app { color: #e5edf5; background: #0d1624; min-height: 100vh; font-family: Arial, Helvetica, sans-serif; }
+.crime-app button, .crime-app a, .crime-app input, .crime-app select { -webkit-tap-highlight-color: transparent; }
+.crime-app button { cursor: pointer; transition: background .18s, border-color .18s; }
+.crime-app button:disabled { opacity: .6; cursor: wait; }
+.crime-app :focus-visible { outline: 3px solid #76c9ff; outline-offset: 4px; }
+.site-header { padding: 24px 36px; display: flex; justify-content: space-between; align-items: center; gap: 24px; border-bottom: 1px solid #263346; }
+.brand { display: flex; align-items: center; gap: 13px; }
+.brand-mark { background: #2762ef; width: 44px; height: 48px; border-radius: 13px 13px 20px 13px; display: grid; place-content: center; font-size: 24px; font-weight: 800; position: relative; }
+.brand-mark span { position: absolute; color: #ff747a; top: -8px; right: 2px; }
+.brand h1 { font-size: 22px; font-weight: 750; letter-spacing: -.7px; line-height: 1.3; }
+.brand h1 span { color: #8eb2ff; }
+.brand p { color: #a1afc1; font-size: 12px; margin-top: 3px; }
+.site-header nav { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.site-header nav a { margin-right: 12px; color: #b5c2d4; }
+.primary, .secondary { border-radius: 8px; padding: 12px 18px; font-weight: 650; font-size: 13px; white-space: nowrap; }
+.primary { background: #3168ef; color: white; border: 1px solid #4379fa; }
+.primary:hover { background: #2158dc; }
+.secondary { background: #192638; border: 1px solid #34445b; color: #e6edf7; }
+.secondary:hover { background: #273951; }
+.intro-bar { padding: 24px 36px 22px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.eyebrow { color: #9bb8ed; font-size: 10px; font-weight: 700; letter-spacing: 1.8px; }
+.intro-bar h2 { font-size: clamp(20px, 2vw, 28px); font-weight: 600; letter-spacing: -.8px; margin-top: 5px; }
+.intro-bar > p { color: #9baec5; max-width: 270px; font-size: 12px; line-height: 1.6; }
+.search-bar { padding: 0 36px 24px; display: grid; grid-template-columns: minmax(190px, 1.6fr) repeat(2, minmax(145px, 1fr)) minmax(150px, 1.1fr) auto auto; align-items: end; gap: 12px; }
+.search-bar label { color: #b4c2d4; font-size: 11px; font-weight: 600; }
+.search-bar input, .search-bar select { display: block; width: 100%; margin-top: 7px; background: #172336; border: 1px solid #34445a; padding: 11px 12px; color: #edf3fb; border-radius: 8px; height: 43px; font-size: 12px; color-scheme: dark; }
+.search-bar .primary { height: 43px; }
+.reset-button { height: 43px; font-size: 12px; color: #b5c5dd; padding: 0 8px; }
+.workspace { display: grid; grid-template-columns: 320px minmax(0, 1fr); margin: 0 24px; border: 1px solid #334358; border-radius: 14px; overflow: hidden; min-height: 620px; height: 70vh; max-height: 960px; }
+.incident-sidebar { background: #111e2f; padding: 24px 18px; overflow-y: auto; }
+.results-heading { margin-bottom: 24px; }
+.results-heading h2 { font-size: 22px; font-weight: 650; letter-spacing: -.5px; margin: 7px 0; display: flex; justify-content: space-between; align-items: center; }
+.results-heading h2 span { padding: 3px 9px; border-radius: 6px; font-size: 12px; background: #263b5a; color: #c3d6f7; }
+.results-heading p { color: #9cacbf; font-size: 11px; }
+.state-card { border: 1px solid #334760; border-radius: 10px; background: #1b2c42; padding: 18px; font-size: 13px; line-height: 1.7; color: #b8c9df; }
+.state-card strong { display: block; color: #f0f4fc; margin-bottom: 8px; font-size: 14px; }
+.state-card button { margin-top: 14px; border: 1px solid #6d8abb; border-radius: 6px; padding: 7px 12px; color: white; }
+.state-card.error { border-color: #936c42; background: #322b25; }
+.incident-sidebar .bg-gray-900 { background: #1b2c42; border-color: #334760; font-size: 13px; line-height: 1.7; color: #b8c9df; }
+.incident-card { width: 100%; text-align: left; padding: 16px 12px; border-radius: 10px; border: 1px solid #324157; background: #19283b; }
+.incident-card:hover { border-color: #6999fa; background: #20334d; }
+.incident-symbol { width: 32px; height: 36px; display: grid; place-content: center; flex-shrink: 0; border-radius: 8px; background: #2c405e; color: #a7c4ff; font-weight: 700; }
+.incident-title { color: #c2d6fa; font-size: 14px; font-weight: 700; }
+.map-panel { min-width: 0; height: 100%; position: relative; background: #dce4e8; isolation: isolate; }
+.map-panel .leaflet-container { height: 100%; width: 100%; font-family: inherit; }
+.map-panel .leaflet-top { top: 64px; }
+.map-toolbar { position: absolute; z-index: 1000; inset: 14px 14px auto 14px; border-radius: 8px; background: #fff; color: #263a4e; padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 3px 20px #142b4920; font-size: 12px; font-weight: 600; }
+.map-toolbar select { background: #edf2f7; border: 1px solid #d7e0ea; border-radius: 5px; padding: 5px 10px; color: #263a4e; }
+.desktop-legend { position: absolute; z-index: 1000; bottom: 28px; right: 14px; background: #fffffff2; color: #33465a; padding: 14px; border: 1px solid #d9e2e9; border-radius: 10px; max-height: 280px; overflow-y: auto; box-shadow: 0 3px 20px #142b4915; width: 200px; }
+.desktop-legend h3 { font-size: 12px; }
+.desktop-legend .space-y-2 { font-size: 10px; }
+.map-panel > .md\:hidden { top: 74px; }
+.method-footer { padding: 36px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 80px; border-top: 1px solid #263346; margin-top: 28px; }
+.method-footer h2 { font-size: 20px; margin: 8px 0 12px; font-weight: 600; }
+.method-footer p { font-size: 12px; color: #acbdd2; line-height: 1.9; max-width: 650px; }
+.method-footer strong { font-size: 13px; }
+.method-footer a { display: inline-block; margin-top: 12px; font-size: 12px; color: #a8c5ff; text-decoration: underline; }
+.skip-link { position: absolute; left: 12px; top: -100px; z-index: 5000; padding: 12px; background: white; color: black; }
+.skip-link:focus { top: 12px; }
+.notice { padding: 12px 36px; color: #ffd398; font-size: 13px; }
+.modal-backdrop { backdrop-filter: blur(5px); }
+.modal-backdrop > div { background: #122035; border-color: #3c506b; box-shadow: 0 30px 100px #0009; }
+.modal-backdrop input, .modal-backdrop select, .modal-backdrop textarea { background: #0c1726; color-scheme: dark; border-color: #3b4d65; }
+.modal-backdrop h2 { color: #b4ceff; }
+.modal-backdrop button.bg-green-600, .modal-backdrop button.bg-blue-600 { background: #3168ef; }
+@media (min-width: 1600px) { .workspace { grid-template-columns: 360px 1fr; } .site-header, .intro-bar, .search-bar { padding-left: 48px; padding-right: 48px; } }
+@media (max-width: 1100px) { .site-header { padding: 20px 24px; } .site-header nav a { display: none; } .search-bar { grid-template-columns: repeat(4, 1fr); padding: 0 24px 20px; } .search-place { grid-column: span 2; } .search-bar .primary { grid-column: span 2; } .intro-bar { padding: 22px 24px; } .workspace { grid-template-columns: 285px minmax(0,1fr); margin: 0 16px; } }
+@media (max-width: 767px) { .site-header { padding: 18px 16px; flex-wrap: wrap; gap: 18px; } .brand h1 { font-size: 21px; } .site-header nav { width: 100%; } .site-header nav button { flex: 1; padding: 11px 8px; font-size: 12px; } .intro-bar { padding: 22px 16px 18px; display: block; } .intro-bar > p { margin-top: 10px; max-width: 100%; } .search-bar { padding: 0 16px 18px; grid-template-columns: 1fr 1fr; gap: 10px; } .search-place { grid-column: 1 / -1; } .search-bar label:nth-child(4) { grid-column: 1 / -1; } .search-bar .primary { grid-column: auto; } .workspace { display: flex; flex-direction: column; height: auto; min-height: 0; max-height: none; margin: 0 10px; } .map-panel { order: 0; height: 56vh; min-height: 360px; } .incident-sidebar { order: 1; max-height: 480px; padding: 22px 16px; } .desktop-legend { display: none; } .method-footer { padding: 26px 18px; grid-template-columns: 1fr; gap: 24px; } }
+@media (prefers-reduced-motion: reduce) { .crime-app * { scroll-behavior: auto !important; transition: none !important; } }

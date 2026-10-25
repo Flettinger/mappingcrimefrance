@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 from sqlalchemy import event
@@ -14,6 +15,8 @@ os.environ["DATABASE_URL"] = "sqlite:///" + (Path(scratch.name) / "acceptance.sq
 spec = importlib.util.spec_from_file_location("acceptance_test_app", Path(__file__).parents[1] / "main.py")
 app_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(app_module)
+app_module.UPLOAD_DIR = Path(scratch.name) / "uploads"
+app_module.UPLOAD_DIR.mkdir()
 
 
 class AcceptanceContractTests(unittest.TestCase):
@@ -26,8 +29,10 @@ class AcceptanceContractTests(unittest.TestCase):
         self.client = TestClient(app_module.app)
         app_module.RATE_LIMIT.clear()
         with app_module.SessionLocal() as db:
+            db.query(app_module.IncidentRetentionHoldDB).delete()
             db.query(app_module.IncidentAcceptanceDB).delete()
             db.query(app_module.IncidentDB).delete()
+            db.query(app_module.SubscriberDB).delete()
             db.commit()
         self.body = dict(
             reporter_email="citizen@example.invalid", type="Vol simple", address="Lieu de test",
@@ -91,6 +96,48 @@ class AcceptanceContractTests(unittest.TestCase):
             self.assertIn("error", self.client.post("/incidents", json=self.body).json())
         with app_module.SessionLocal() as db:
             self.assertEqual(db.query(app_module.IncidentAcceptanceDB).count(), 0)
+
+    def test_retention_removes_expired_data_and_keeps_current_data(self):
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        with app_module.SessionLocal() as db:
+            for ident, status, days in [(1, "pending", 91), (2, "approved", 731), (3, "approved", 91), (4, "pending", 5)]:
+                db.add(app_module.IncidentDB(id=ident, reporter_email="test@example.invalid", type="Vol simple", address="test", latitude=0, longitude=0, status=status, created_at=now-timedelta(days=days)))
+            for ident, status, days in [(1, "pending", 8), (2, "confirmed", 8), (3, "pending", 1)]:
+                db.add(app_module.SubscriberDB(id=ident, email="test@example.invalid", address="test", latitude=0, longitude=0, status=status, created_at=now-timedelta(days=days)))
+            db.commit()
+        app_module.purge_expired_data(now)
+        with app_module.SessionLocal() as db:
+            self.assertIsNone(db.get(app_module.IncidentDB, 1))
+            self.assertIsNone(db.get(app_module.IncidentDB, 2))
+            self.assertIsNone(db.get(app_module.IncidentDB, 3).reporter_email)
+            self.assertIsNotNone(db.get(app_module.IncidentDB, 4).reporter_email)
+            self.assertIsNone(db.get(app_module.SubscriberDB, 1))
+            self.assertIsNotNone(db.get(app_module.SubscriberDB, 2))
+            self.assertIsNotNone(db.get(app_module.SubscriberDB, 3))
+
+    def test_documented_hold_preserves_data_but_not_expired_publication(self):
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        with app_module.SessionLocal() as db:
+            db.add(app_module.IncidentDB(id=9, reporter_email="test@example.invalid", type="Vol simple", address="test", latitude=0, longitude=0, status="approved", created_at=now-timedelta(days=731)))
+            db.add(app_module.IncidentRetentionHoldDB(incident_id=9, until=now+timedelta(days=2)))
+            db.commit()
+        app_module.purge_expired_data(now)
+        with app_module.SessionLocal() as db:
+            self.assertIsNotNone(db.get(app_module.IncidentDB, 9).reporter_email)
+        self.assertEqual(self.client.get("/incidents").json(), [])
+        app_module.purge_expired_data(now+timedelta(days=3))
+        with app_module.SessionLocal() as db:
+            self.assertIsNone(db.get(app_module.IncidentDB, 9))
+
+    def test_media_cleanup_cannot_delete_a_path_outside_uploads(self):
+        outside = Path(scratch.name) / "must-stay.txt"
+        outside.write_text("keep", encoding="utf-8")
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        with app_module.SessionLocal() as db:
+            db.add(app_module.IncidentDB(id=10, type="Vol simple", address="test", latitude=0, longitude=0, status="pending", media_url="/uploads/../must-stay.txt", created_at=now-timedelta(days=91)))
+            db.commit()
+        app_module.purge_expired_data(now)
+        self.assertTrue(outside.exists())
 
 
 if __name__ == "__main__":

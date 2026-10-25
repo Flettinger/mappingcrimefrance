@@ -1,4 +1,5 @@
 import json
+import hashlib
 import math
 import os
 import smtplib
@@ -6,17 +7,17 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Header, Query, Request, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from sqlalchemy import Column, Float, Integer, String, Text, TIMESTAMP, Time, create_engine
+from pydantic import BaseModel, StrictBool
+from sqlalchemy import Boolean, Column, Float, Integer, String, Text, TIMESTAMP, Time, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
 
@@ -39,6 +40,9 @@ if not DATABASE_URL:
 RATE_LIMIT = {}
 
 BASE_DIR = Path(__file__).resolve().parent
+LEGAL_DOCUMENTS = json.loads((BASE_DIR / "legal-documents.json").read_text(encoding="utf-8"))
+LEGAL_SNAPSHOT = json.dumps(LEGAL_DOCUMENTS, ensure_ascii=False, sort_keys=True)
+LEGAL_HASH = hashlib.sha256(LEGAL_SNAPSHOT.encode("utf-8")).hexdigest()
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -79,6 +83,23 @@ class SubscriberDB(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
 
 
+class IncidentAcceptanceDB(Base):
+    """Private acceptance record, stored atomically with the citizen report.
+
+    Separate table: existing incidents remain readable without adding required
+    columns or inventing retrospective acceptance for historical submissions.
+    """
+    __tablename__ = "incident_acceptances"
+    incident_id = Column(Integer, primary_key=True)
+    accepted_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    legal_version = Column(String(40), nullable=False)
+    terms_accepted = Column(Boolean, nullable=False)
+    declaration_accepted = Column(Boolean, nullable=False)
+    privacy_acknowledged = Column(Boolean, nullable=False)
+    documents_snapshot = Column(Text, nullable=False)
+    documents_sha256 = Column(String(64), nullable=False)
+
+
 # IMPORTANT : créer les tables APRÈS la définition des modèles
 Base.metadata.create_all(bind=engine)
 
@@ -107,6 +128,10 @@ class IncidentCreate(BaseModel):
     latitude: float
     longitude: float
     captcha_token: str
+    terms_accepted: StrictBool
+    declaration_accepted: StrictBool
+    privacy_acknowledged: StrictBool
+    legal_version: str
     media_url: Optional[str] = None
     media_type: Optional[str] = None
 
@@ -340,6 +365,10 @@ async def upload_media(file: UploadFile = File(...)):
 
 @app.post("/incidents")
 def create_incident(incident: IncidentCreate, request: Request):
+    if not all((incident.terms_accepted, incident.declaration_accepted, incident.privacy_acknowledged)):
+        raise HTTPException(status_code=422, detail="Les engagements et la lecture de la notice doivent être confirmés.")
+    if incident.legal_version != LEGAL_DOCUMENTS["version"]:
+        raise HTTPException(status_code=409, detail="Les textes ont été mis à jour. Actualisez la page puis relisez-les avant de confirmer.")
     db = SessionLocal()
 
     if not incident.reporter_email or "@" not in incident.reporter_email:
@@ -373,12 +402,28 @@ def create_incident(incident: IncidentCreate, request: Request):
         status="pending",
     )
 
-    db.add(new_incident)
-    db.commit()
-    db.refresh(new_incident)
-    db.close()
-
-    return new_incident
+    accepted_at = datetime.now(timezone.utc)
+    try:
+        db.add(new_incident)
+        db.flush()
+        incident_id = new_incident.id
+        db.add(IncidentAcceptanceDB(
+            incident_id=incident_id,
+            accepted_at=accepted_at,
+            legal_version=LEGAL_DOCUMENTS["version"],
+            terms_accepted=True,
+            declaration_accepted=True,
+            privacy_acknowledged=True,
+            documents_snapshot=LEGAL_SNAPSHOT,
+            documents_sha256=LEGAL_HASH,
+        ))
+        db.commit()
+        return {"id": incident_id, "status": "pending", "accepted_at": accepted_at, "legal_version": LEGAL_DOCUMENTS["version"]}
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 @app.post("/subscribers")
@@ -543,6 +588,7 @@ def delete_incident(incident_id: int, x_admin_token: str = Header(None)):
         db.close()
         return {"error": "Incident introuvable"}
 
+    db.query(IncidentAcceptanceDB).filter(IncidentAcceptanceDB.incident_id == incident_id).delete()
     db.delete(incident)
     db.commit()
     db.close()

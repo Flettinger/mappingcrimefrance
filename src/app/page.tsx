@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Script from "next/script";
+import legalDocuments from "../lib/legal";
 import "leaflet/dist/leaflet.css";
 import { getIcons, INCIDENT_TYPES, type IncidentIcons } from "../lib/icons";
 
@@ -72,6 +73,8 @@ export default function Home() {
   const [incidentTime, setIncidentTime] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptDeclaration, setAcceptDeclaration] = useState(false);
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
 
   const [captchaToken, setCaptchaToken] = useState("");
   const [turnstileLoaded, setTurnstileLoaded] = useState(false);
@@ -260,8 +263,8 @@ export default function Home() {
       return;
     }
 
-    if (!acceptTerms) {
-      alert("Vous devez accepter les conditions d’utilisation.");
+    if (!acceptTerms || !acceptDeclaration || !privacyAcknowledged) {
+      alert("Veuillez confirmer les engagements du déclarant, accepter les conditions et prendre connaissance des informations sur vos données.");
       return;
     }
 
@@ -297,6 +300,10 @@ export default function Home() {
       latitude,
       longitude,
       captcha_token: captchaToken,
+      terms_accepted: acceptTerms,
+      declaration_accepted: acceptDeclaration,
+      privacy_acknowledged: privacyAcknowledged,
+      legal_version: legalDocuments.version,
       media_url: uploadedMedia.media_url,
       media_type: uploadedMedia.media_type,
     };
@@ -312,7 +319,7 @@ export default function Home() {
     const result = await response.json();
 
     if (!response.ok || result.error) {
-      alert(result.error || "Le service n’a pas pu traiter la demande.");
+      alert(result.error || (typeof result.detail === "string" ? result.detail : "Le service n’a pas pu traiter la demande."));
       return;
     }
 
@@ -330,6 +337,8 @@ export default function Home() {
     setMediaFile(null);
     setCaptchaToken("");
     setAcceptTerms(false);
+    setAcceptDeclaration(false);
+    setPrivacyAcknowledged(false);
     setShowForm(false);
 
     await loadIncidents();
@@ -363,7 +372,7 @@ export default function Home() {
     const result = await response.json();
 
     if (!response.ok || result.error) {
-      alert(result.error || "Le service n’a pas pu traiter la demande.");
+      alert(result.error || (typeof result.detail === "string" ? result.detail : "Le service n’a pas pu traiter la demande."));
       return;
     }
 
@@ -604,7 +613,7 @@ export default function Home() {
       </div>
 
 
-      <footer id="methode" className="method-footer"><div><span className="eyebrow">NOTRE DÉMARCHE</span><h2>Une carte de contributions, avec du contexte.</h2><p>Les publications proviennent de déclarations citoyennes examinées avant leur mise en ligne. Cet examen ne constitue pas une vérification officielle des faits. La carte n’est ni exhaustive ni une mesure du niveau de criminalité.</p></div><div><strong>Comment ça fonctionne ?</strong><p>1. Vous décrivez un incident.<br />2. Votre contribution est examinée.<br />3. Après publication, les abonnés concernés peuvent recevoir une alerte dans un rayon de 10 km.</p><a href="/cgu">Conditions d’utilisation</a></div></footer>
+      <footer id="methode" className="method-footer"><div><span className="eyebrow">NOTRE DÉMARCHE</span><h2>Une carte de contributions, avec du contexte.</h2><p>Les publications proviennent de déclarations citoyennes examinées avant leur mise en ligne. Cet examen ne constitue pas une vérification officielle des faits. La carte n’est ni exhaustive ni une mesure du niveau de criminalité.</p></div><div><strong>Comment ça fonctionne ?</strong><p>1. Vous décrivez un incident.<br />2. Votre contribution est examinée.<br />3. Après publication, les abonnés concernés peuvent recevoir une alerte dans un rayon de 10 km.</p><a href="/cgu">Conditions d’utilisation</a> · <a href="/confidentialite">Données personnelles</a></div></footer>
 
       {showForm && (
         <div role="dialog" aria-modal="true" aria-label="Formulaire citoyen" className="modal-backdrop fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-3 md:p-6">
@@ -703,30 +712,15 @@ export default function Home() {
               </div>
             )}
 
-            <div className="mt-4 mb-4 text-sm text-white">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={acceptTerms}
-                  onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mt-1"
-                />
-
-                <span className="leading-relaxed text-gray-300">
-                  Je certifie que les informations déclarées sont exactes à ma
-                  connaissance, ne sont ni mensongères ni diffamatoires, et
-                  j’accepte les{" "}
-                  <a
-                    href="/cgu"
-                    target="_blank"
-                    className="text-red-400 underline hover:text-red-300"
-                  >
-                    Conditions Générales d’Utilisation
-                  </a>
-                  .
-                </span>
-              </label>
-            </div>
+            <fieldset className="mt-5 mb-5 space-y-4 text-sm border border-slate-600 rounded-lg p-4">
+              <legend className="px-2 font-semibold">Engagements avant transmission</legend>
+              <p className="text-slate-300">Ce dépôt citoyen ne constitue ni une plainte ni une demande de secours. Ne transmettez aucune donnée permettant d’identifier une personne en lien avec une infraction.</p>
+              <label className="flex items-start gap-3"><input type="checkbox" checked={acceptDeclaration} onChange={(event) => setAcceptDeclaration(event.target.checked)} className="mt-1" /><span>{legalDocuments.declaration}</span></label>
+              <label className="flex items-start gap-3"><input type="checkbox" checked={acceptTerms} onChange={(event) => setAcceptTerms(event.target.checked)} className="mt-1" /><span>J’ai lu et j’accepte les <a className="text-blue-300 underline" href="/cgu" target="_blank" rel="noopener noreferrer">conditions d’utilisation</a> (version {legalDocuments.version}).</span></label>
+              <div className="border-t border-slate-600 pt-4"><p className="text-slate-300 mb-3">Responsable : {legalDocuments.operator}. Votre email sert à gérer le signalement et ne doit pas être publié. Le lieu, la description et les médias retenus peuvent être rendus publics après examen. La date et la version des engagements sont conservées avec votre dépôt. Contact : <a className="underline text-blue-300" href={`mailto:${legalDocuments.email}`}>{legalDocuments.email}</a>.</p>
+              <label className="flex items-start gap-3"><input type="checkbox" checked={privacyAcknowledged} onChange={(event) => setPrivacyAcknowledged(event.target.checked)} className="mt-1" /><span>J’ai pris connaissance de la notice <a className="text-blue-300 underline" href="/confidentialite" target="_blank" rel="noopener noreferrer">Données personnelles</a>. Cette confirmation de lecture n’est pas un consentement à des usages supplémentaires.</span></label></div>
+              <p className="text-xs text-slate-400">Acceptation en ligne enregistrée à réception par le serveur ; aucune signature électronique qualifiée ni vérification d’identité n’est effectuée.</p>
+            </fieldset>
 
             <div ref={captchaRef} className="mb-4 min-h-[70px]" />
 
@@ -761,6 +755,7 @@ export default function Home() {
               de 10 km autour de votre adresse. L’inscription devient active après confirmation par email. Un lien de désinscription figure dans chaque alerte.
             </p>
 
+            <p className="text-xs text-slate-300 mb-4">L’email et l’adresse servent à gérer les alertes demandées. Responsable : {legalDocuments.operator}. Consultez la <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="underline text-blue-300">notice sur vos données et vos droits</a>.</p>
             <input
               type="email"
               aria-label="Adresse email" placeholder="votre@email.fr"

@@ -1,0 +1,82 @@
+{
+  "version": "2026-10-25.1",
+  "operator": "Frédéric Lettinger",
+  "email": "frederic.lettinger@gmail.com",
+  "declaration": "Je certifie relater de bonne foi des faits dont j’ai connaissance, sans inventer ni présenter comme établi ce qui est incertain. Je m’engage à ne transmettre ni accusation nominative ni information permettant d’identifier une victime, un témoin ou une personne mise en cause, notamment par une adresse privée, une plaque, un visage ou un document. Je dispose des droits nécessaires sur les médias joints. Je comprends que ce signalement est soumis à examen et ne constitue ni une plainte ni une demande de secours.",
+  "terms": [
+    [
+      "Responsable du service",
+      "Mapping Crime France est exploité par Frédéric Lettinger. Contact : frederic.lettinger@gmail.com."
+    ],
+    [
+      "Objet et limites",
+      "Le site présente des contributions citoyennes examinées avant publication. Il ne constitue ni un service de police, ni un constat officiel, ni une mesure exhaustive de la criminalité. En cas d’urgence, contactez les services de secours compétents. Le formulaire ne permet pas de déposer plainte."
+    ],
+    [
+      "Engagement du déclarant",
+      "Le déclarant doit être de bonne foi, distinguer ce qu’il a constaté de ce qui lui a été rapporté et indiquer les incertitudes. Les contenus inventés, diffamatoires, injurieux, discriminatoires ou portant atteinte aux droits de tiers sont interdits."
+    ],
+    [
+      "Données de tiers et médias",
+      "Ne transmettez pas de nom, de visage reconnaissable, de plaque, de coordonnées privées, de document médical ou judiciaire, ni d’élément permettant d’identifier une victime ou une personne mise en cause. Une adresse ou une description peut suffire à identifier une personne. Utilisez un lieu public ou une indication ne permettant pas cette identification. Les médias sont facultatifs et doivent respecter ces règles ainsi que les droits de leurs auteurs."
+    ],
+    [
+      "Examen et publication",
+      "Le dépôt n’entraîne pas une publication automatique. Le responsable peut refuser une contribution ou demander des précisions. Seuls les éléments retenus après examen ont vocation à apparaître sur la carte. L’email du déclarant et la preuve d’acceptation ne doivent pas être publiés. Une validation éditoriale ne vaut pas vérification par une autorité."
+    ],
+    [
+      "Responsabilités",
+      "Chaque utilisateur répond de ses propres actes dans les conditions prévues par la loi. Ces conditions n’excluent pas les obligations ni les responsabilités légales de l’exploitant, et ne constituent pas une renonciation aux droits des personnes."
+    ],
+    [
+      "Signalement d’un contenu et exercice des droits",
+      "Pour demander l’examen, la rectification ou le retrait d’un contenu, écrivez à frederic.lettinger@gmail.com en indiquant les éléments permettant de retrouver la publication. N’envoyez pas spontanément de pièce d’identité. Les demandes sont examinées au regard des droits et obligations applicables."
+    ],
+    [
+      "Alertes et informations personnelles",
+      "La demande d’alertes est distincte du dépôt d’un signalement. Elle utilise une confirmation par email et un lien de désinscription. Les traitements de données sont décrits dans la notice Données personnelles."
+    ],
+    [
+      "Acceptation et versions",
+      "Avant le dépôt, le déclarant accepte les présentes conditions et confirme séparément son engagement citoyen. Le serveur enregistre la date de réception de ces engagements, la version et une copie des textes présentés. Ce mécanisme est une trace d’acceptation en ligne, sans vérification de l’identité civile ni signature électronique qualifiée."
+    ]
+  ],
+  "privacy": [
+    [
+      "Responsable et contact",
+      "Frédéric Lettinger détermine les finalités et moyens du service Mapping Crime France. Pour toute demande relative à vos données : frederic.lettinger@gmail.com."
+    ],
+    [
+      "Données collectées",
+      "Le formulaire recueille votre email, la catégorie, le lieu et la description du signalement, une heure facultative et, si vous le choisissez, un média. Une trace d’acceptation associe au signalement la date enregistrée par le serveur, les engagements confirmés, la version et la copie des textes. Le formulaire d’alertes recueille séparément l’email et l’adresse de la zone à surveiller. Les prestataires techniques peuvent aussi traiter les informations de connexion nécessaires à leurs services."
+    ],
+    [
+      "Finalités et bases envisagées",
+      "La réception et l’examen des contributions, la gestion des demandes et la conservation proportionnée des preuves d’acceptation poursuivent les intérêts légitimes de fonctionnement, de modération et de défense du service, sous réserve des droits des personnes. L’inscription facultative aux alertes repose sur une demande spécifique confirmée par email et peut être retirée. Ces fondements doivent être validés au regard du fonctionnement réel ; ils n’autorisent pas à eux seuls le traitement de données personnelles relatives à des infractions."
+    ],
+    [
+      "Champs obligatoires et choix",
+      "L’email, le type, la rue ou le lieu, le code postal, la ville et la description sont nécessaires au dépôt actuel. Le numéro de rue, l’heure et le média sont facultatifs. Sans les informations nécessaires et les engagements de dépôt, le signalement ne peut pas être transmis. Vous pouvez consulter la carte sans déposer de contribution ni vous inscrire aux alertes."
+    ],
+    [
+      "Destinataires et publication",
+      "L’exploitant et les personnes autorisées à modérer accèdent aux éléments nécessaires. Les contenus approuvés, leur catégorie et leur lieu sont destinés aux visiteurs de la carte et peuvent figurer dans les alertes des abonnés concernés. Votre email de contact et la trace d’acceptation ne sont pas destinés au public. Les autorités peuvent recevoir des informations sur demande légalement fondée."
+    ],
+    [
+      "Prestataires et transferts",
+      "Le fonctionnement actuel fait intervenir notamment Vercel pour le site, Render pour le serveur et la base, OVH pour la messagerie, Cloudflare Turnstile pour la protection contre les abus, ainsi que les fournisseurs de cartographie et de recherche d’adresses. Certains de ces prestataires peuvent traiter des données hors de l’Espace économique européen. Les localisations, destinataires exacts et garanties de transfert doivent être vérifiés et précisés avant l’ouverture publique des dépôts."
+    ],
+    [
+      "Conservation — point à finaliser",
+      "Les éléments d’un signalement sont nécessaires pendant son examen, puis tant que sa publication et son suivi sont justifiés. Les données d’alerte sont nécessaires pendant l’inscription ; les preuves peuvent nécessiter une conservation distincte et limitée pour traiter une contestation. Les durées maximales, le délai des inscriptions non confirmées, le sort des médias rejetés et les procédures effectives de suppression restent à définir avant l’ouverture publique. Cette notice ne promet pas de purge automatique actuellement absente du service."
+    ],
+    [
+      "Vos droits",
+      "Vous pouvez demander l’accès, la rectification, l’effacement ou la limitation de vos données dans les conditions prévues par le RGPD. Vous pouvez vous opposer à un traitement fondé sur l’intérêt légitime pour des raisons tenant à votre situation et retirer votre demande d’alertes via le lien de désinscription. Selon les conditions applicables, vous pouvez demander la portabilité des données. Écrivez à frederic.lettinger@gmail.com. Vous pouvez également adresser une réclamation à la CNIL, sur cnil.fr."
+    ],
+    [
+      "Limites et validation avant ouverture",
+      "Ne transmettez aucune donnée permettant d’identifier une personne en lien avec une infraction. Une case cochée ou l’accord d’un déclarant ne règle pas les droits des tiers ni les restrictions applicables à ces données. La présente notice est une version de travail ; les bases légales, durées, prestataires, transferts et obligations de l’éditeur doivent être finalisés et validés avant ouverture au public."
+    ]
+  ]
+}

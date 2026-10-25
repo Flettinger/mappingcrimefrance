@@ -1,4 +1,7 @@
 import json
+import hashlib
+import asyncio
+from contextlib import asynccontextmanager, suppress
 import math
 import os
 import smtplib
@@ -6,17 +9,17 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Header, Query, Request, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from sqlalchemy import Column, Float, Integer, String, Text, TIMESTAMP, Time, create_engine
+from pydantic import BaseModel, StrictBool
+from sqlalchemy import Boolean, Column, Float, Integer, String, Text, TIMESTAMP, Time, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
 
@@ -39,6 +42,9 @@ if not DATABASE_URL:
 RATE_LIMIT = {}
 
 BASE_DIR = Path(__file__).resolve().parent
+LEGAL_DOCUMENTS = json.loads((BASE_DIR / "legal-documents.json").read_text(encoding="utf-8"))
+LEGAL_SNAPSHOT = json.dumps(LEGAL_DOCUMENTS, ensure_ascii=False, sort_keys=True)
+LEGAL_HASH = hashlib.sha256(LEGAL_SNAPSHOT.encode("utf-8")).hexdigest()
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -46,7 +52,26 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
-app = FastAPI(title="MappingCrimeFrance API")
+@asynccontextmanager
+async def lifespan(app):
+    await asyncio.to_thread(purge_expired_data)
+    async def maintenance():
+        while True:
+            await asyncio.sleep(3600)
+            try:
+                await asyncio.to_thread(purge_expired_data)
+            except Exception:
+                print("Maintenance de conservation échouée ; nouvelle tentative au prochain cycle.")
+    task = asyncio.create_task(maintenance())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(title="MappingCrimeFrance API", lifespan=lifespan)
 
 
 class IncidentDB(Base):
@@ -79,8 +104,72 @@ class SubscriberDB(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
 
 
+class IncidentAcceptanceDB(Base):
+    """Private acceptance record, stored atomically with the citizen report.
+
+    Separate table: existing incidents remain readable without adding required
+    columns or inventing retrospective acceptance for historical submissions.
+    """
+    __tablename__ = "incident_acceptances"
+    incident_id = Column(Integer, primary_key=True)
+    accepted_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    legal_version = Column(String(40), nullable=False)
+    terms_accepted = Column(Boolean, nullable=False)
+    declaration_accepted = Column(Boolean, nullable=False)
+    privacy_acknowledged = Column(Boolean, nullable=False)
+    documents_snapshot = Column(Text, nullable=False)
+    documents_sha256 = Column(String(64), nullable=False)
+
+
+class IncidentRetentionHoldDB(Base):
+    """Time-limited exception for a documented dispute or necessary follow-up."""
+    __tablename__ = "incident_retention_holds"
+    incident_id = Column(Integer, primary_key=True)
+    until = Column(TIMESTAMP(timezone=True), nullable=False)
+
+
 # IMPORTANT : créer les tables APRÈS la définition des modèles
 Base.metadata.create_all(bind=engine)
+
+
+def purge_expired_data(now=None):
+    """Enforce retention on startup and hourly while this service is running."""
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is not None:
+        now = now.astimezone(timezone.utc).replace(tzinfo=None)
+    deleted_media = []
+    with SessionLocal() as db:
+        holds = {row.incident_id for row in db.query(IncidentRetentionHoldDB).filter(IncidentRetentionHoldDB.until > now).all()}
+        for incident in db.query(IncidentDB).all():
+            created = incident.created_at
+            if created is None:
+                continue
+            if created.tzinfo is not None:
+                created = created.astimezone(timezone.utc).replace(tzinfo=None)
+            held = incident.id in holds
+            expired = created <= now - timedelta(days=730 if incident.status == "approved" else 90)
+            if expired and not held:
+                if incident.media_url:
+                    deleted_media.append(incident.media_url)
+                db.query(IncidentAcceptanceDB).filter(IncidentAcceptanceDB.incident_id == incident.id).delete()
+                db.query(IncidentRetentionHoldDB).filter(IncidentRetentionHoldDB.incident_id == incident.id).delete()
+                db.delete(incident)
+            elif not held and created <= now - timedelta(days=90):
+                incident.reporter_email = None
+        db.query(SubscriberDB).filter(SubscriberDB.status != "confirmed", SubscriberDB.created_at <= now - timedelta(days=7)).delete(synchronize_session=False)
+        db.query(IncidentRetentionHoldDB).filter(IncidentRetentionHoldDB.until <= now).delete(synchronize_session=False)
+        db.commit()
+        referenced = {row[0] for row in db.query(IncidentDB.media_url).filter(IncidentDB.media_url.isnot(None)).all()}
+    for media_url in deleted_media:
+        if not media_url.startswith("/uploads/") or media_url in referenced:
+            continue
+        candidate = (UPLOAD_DIR / media_url.removeprefix("/uploads/")).resolve()
+        if candidate.parent == UPLOAD_DIR.resolve():
+            candidate.unlink(missing_ok=True)
+    cutoff = (now - timedelta(days=90)).replace(tzinfo=timezone.utc).timestamp()
+    for candidate in UPLOAD_DIR.iterdir():
+        if candidate.is_file() and not candidate.is_symlink() and candidate.stat().st_mtime <= cutoff and f"/uploads/{candidate.name}" not in referenced:
+            candidate.unlink()
 
 
 app.add_middleware(
@@ -107,6 +196,10 @@ class IncidentCreate(BaseModel):
     latitude: float
     longitude: float
     captcha_token: str
+    terms_accepted: StrictBool
+    declaration_accepted: StrictBool
+    privacy_acknowledged: StrictBool
+    legal_version: str
     media_url: Optional[str] = None
     media_type: Optional[str] = None
 
@@ -274,7 +367,7 @@ def get_incidents(
     date_to: Optional[str] = Query(None),
 ):
     db = SessionLocal()
-    query = db.query(IncidentDB).filter(IncidentDB.status == "approved")
+    query = db.query(IncidentDB).filter(IncidentDB.status == "approved", IncidentDB.created_at > datetime.now(timezone.utc) - timedelta(days=730))
 
     if sector:
         query = query.filter(IncidentDB.address.ilike(f"%{sector}%"))
@@ -283,11 +376,27 @@ def get_incidents(
         query = query.filter(IncidentDB.created_at >= datetime.fromisoformat(date_from))
 
     if date_to:
-        query = query.filter(IncidentDB.created_at <= datetime.fromisoformat(date_to))
+        query = query.filter(IncidentDB.created_at < datetime.fromisoformat(date_to) + timedelta(days=1))
 
     incidents = query.order_by(IncidentDB.created_at.desc()).all()
+    # Expose only public fields; reporter contact details stay in administration.
+    public_incidents = [
+        {
+            "id": incident.id,
+            "type": incident.type,
+            "address": incident.address,
+            "description": incident.description,
+            "latitude": incident.latitude,
+            "longitude": incident.longitude,
+            "incident_time": incident.incident_time,
+            "media_url": incident.media_url,
+            "media_type": incident.media_type,
+            "created_at": incident.created_at,
+        }
+        for incident in incidents
+    ]
     db.close()
-    return incidents
+    return public_incidents
 
 
 @app.post("/upload")
@@ -324,6 +433,10 @@ async def upload_media(file: UploadFile = File(...)):
 
 @app.post("/incidents")
 def create_incident(incident: IncidentCreate, request: Request):
+    if not all((incident.terms_accepted, incident.declaration_accepted, incident.privacy_acknowledged)):
+        raise HTTPException(status_code=422, detail="Les engagements et la lecture de la notice doivent être confirmés.")
+    if incident.legal_version != LEGAL_DOCUMENTS["version"]:
+        raise HTTPException(status_code=409, detail="Les textes ont été mis à jour. Actualisez la page puis relisez-les avant de confirmer.")
     db = SessionLocal()
 
     if not incident.reporter_email or "@" not in incident.reporter_email:
@@ -357,12 +470,28 @@ def create_incident(incident: IncidentCreate, request: Request):
         status="pending",
     )
 
-    db.add(new_incident)
-    db.commit()
-    db.refresh(new_incident)
-    db.close()
-
-    return new_incident
+    accepted_at = datetime.now(timezone.utc)
+    try:
+        db.add(new_incident)
+        db.flush()
+        incident_id = new_incident.id
+        db.add(IncidentAcceptanceDB(
+            incident_id=incident_id,
+            accepted_at=accepted_at,
+            legal_version=LEGAL_DOCUMENTS["version"],
+            terms_accepted=True,
+            declaration_accepted=True,
+            privacy_acknowledged=True,
+            documents_snapshot=LEGAL_SNAPSHOT,
+            documents_sha256=LEGAL_HASH,
+        ))
+        db.commit()
+        return {"id": incident_id, "status": "pending", "accepted_at": accepted_at, "legal_version": LEGAL_DOCUMENTS["version"]}
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 @app.post("/subscribers")
@@ -378,6 +507,7 @@ def create_subscriber(subscriber: SubscriberCreate):
         existing.longitude = subscriber.longitude
         existing.radius_km = 10
         existing.status = "pending"
+        existing.created_at = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(existing)
@@ -527,6 +657,8 @@ def delete_incident(incident_id: int, x_admin_token: str = Header(None)):
         db.close()
         return {"error": "Incident introuvable"}
 
+    db.query(IncidentAcceptanceDB).filter(IncidentAcceptanceDB.incident_id == incident_id).delete()
+    db.query(IncidentRetentionHoldDB).filter(IncidentRetentionHoldDB.incident_id == incident_id).delete()
     db.delete(incident)
     db.commit()
     db.close()

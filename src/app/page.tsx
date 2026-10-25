@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Script from "next/script";
 import "leaflet/dist/leaflet.css";
-import { getIcons, type IncidentIcons } from "../lib/icons";
+import { getIcons, INCIDENT_TYPES, type IncidentIcons } from "../lib/icons";
 
 declare global {
   interface Window {
@@ -382,7 +382,7 @@ export default function Home() {
   }
   const addIncident = () => runSubmission(sendIncident);
   const subscribeToAlerts = () => runSubmission(sendSubscription);
-  const visibleIncidents = incidents.filter((incident) => !category || incident.type === category);
+  const visibleIncidents = incidents.filter((incident) => incident.type !== "Accident" && (!category || incident.type === category));
 
   useEffect(() => {
     if (!showForm && !showAlertForm && !showLegend) return;
@@ -448,7 +448,7 @@ export default function Home() {
         <label className="search-place">Ville ou secteur<input placeholder="Rechercher une ville, un quartier…" value={searchSector} onChange={(event) => setSearchSector(event.target.value)} /></label>
         <label>Publié à partir du<input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
         <label>Jusqu’au<input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
-        <label>Type d’incident<select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tous les types</option>{["Vol simple", "Vol à main armée", "Car-jacking", "Cambriolage", "Tentative de cambriolage", "Agression physique", "Agression sexuelle", "Viol", "Dégradation", "Incendie volontaire", "Escroquerie", "Trafic de stupéfiants", "Rodéo urbain", "Nuisances / tapage", "Violences conjugales", "Disparition inquiétante", "Accident", "Homicide"].map((name) => <option key={name}>{name}</option>)}</select></label>
+        <label>Type d’incident<select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tous les types</option>{INCIDENT_TYPES.map((name) => <option key={name}>{name}</option>)}</select></label>
         <button className="primary" disabled={loading} type="submit">{loading ? "Chargement…" : "Rechercher"}</button><button className="reset-button" type="button" onClick={resetSearch}>Effacer</button>
       </form>
       {notice && <p className="notice" role="alert">{notice}</p>}
@@ -476,7 +476,7 @@ export default function Home() {
               >
                 <div className="flex gap-3">
                   <div className="incident-symbol">
-                    !
+                    {icons && <img src={(icons[incident.type] || icons.Autre).options.iconUrl} alt="" width={28} height={34} />}
                   </div>
 
                   <div className="flex-1">
@@ -563,17 +563,7 @@ export default function Home() {
   <div className="space-y-2 text-xs">
     {icons && (
       <>
-        <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
-        <LegendItem icon={icons["Cambriolage"]} label="Cambriolage" />
-        <LegendItem icon={icons["Car-jacking"]} label="Car-jacking" />
-        <LegendItem icon={icons["Agression physique"]} label="Agression physique" />
-        <LegendItem icon={icons["Incendie volontaire"]} label="Incendie volontaire" />
-        <LegendItem icon={icons["Accident"]} label="Accident" />
-        <LegendItem icon={icons["Trafic de stupéfiants"]} label="Trafic de stupéfiants" />
-        <LegendItem icon={icons["Rodéo urbain"]} label="Rodéo urbain" />
-        <LegendItem icon={icons["Nuisances / tapage"]} label="Nuisances / tapage" />
-        <LegendItem icon={icons["Disparition inquiétante"]} label="Disparition" />
-        <LegendItem icon={icons["Homicide"]} label="Homicide" />
+        {INCIDENT_TYPES.map((name) => <LegendItem key={name} icon={icons[name]} label={name} />)}
       </>
     )}
   </div>
@@ -603,17 +593,7 @@ export default function Home() {
       <div className="space-y-3 text-sm">
         {icons && (
           <>
-            <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
-            <LegendItem icon={icons["Cambriolage"]} label="Cambriolage" />
-            <LegendItem icon={icons["Car-jacking"]} label="Car-jacking" />
-            <LegendItem icon={icons["Agression physique"]} label="Agression physique" />
-            <LegendItem icon={icons["Incendie volontaire"]} label="Incendie volontaire" />
-            <LegendItem icon={icons["Accident"]} label="Accident" />
-            <LegendItem icon={icons["Trafic de stupéfiants"]} label="Trafic de stupéfiants" />
-            <LegendItem icon={icons["Rodéo urbain"]} label="Rodéo urbain" />
-            <LegendItem icon={icons["Nuisances / tapage"]} label="Nuisances / tapage" />
-            <LegendItem icon={icons["Disparition inquiétante"]} label="Disparition" />
-            <LegendItem icon={icons["Homicide"]} label="Homicide" />
+            {INCIDENT_TYPES.map((name) => <LegendItem key={name} icon={icons[name]} label={name} />)}
           </>
         )}
       </div>
@@ -662,24 +642,7 @@ export default function Home() {
               onChange={(e) => setType(e.target.value)}
               className="w-full p-3 rounded bg-black border border-gray-700 mb-4"
             >
-              <option>Vol simple</option>
-              <option>Vol à main armée</option>
-              <option>Car-jacking</option>
-              <option>Cambriolage</option>
-              <option>Tentative de cambriolage</option>
-              <option>Agression physique</option>
-              <option>Agression sexuelle</option>
-              <option>Viol</option>
-              <option>Dégradation</option>
-              <option>Incendie volontaire</option>
-              <option>Escroquerie</option>
-              <option>Trafic de stupéfiants</option>
-              <option>Rodéo urbain</option>
-              <option>Nuisances / tapage</option>
-              <option>Violences conjugales</option>
-              <option>Disparition inquiétante</option>
-              <option>Accident</option>
-              <option>Homicide</option>
+              {INCIDENT_TYPES.map((name) => <option key={name}>{name}</option>)}
             </select>
 
             <label className="block mb-2">Horaire de l’incident</label>

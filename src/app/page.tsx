@@ -492,13 +492,13 @@ export default function Home() {
     setSearchError(false);
     setIncidents([]);
     const firstNotice = criteria.type === missingPersonType && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
-      ? researchNotices.find((notice) => notice.center && noticeMatches(notice, criteria.sector, criteria.from, criteria.to));
+      ? researchNotices.find((notice) => notice.center && noticeMatches(notice, criteria.sector, criteria.from, criteria.to))
+      : undefined;
     const firstReport = publicReports.find((incident) =>
           (!criteria.type || criteria.type === incident.type) &&
           (!criteria.sector || normalizeSearch(incident.address).includes(normalizeSearch(criteria.sector))) &&
           (!criteria.from || incident.incident_date! >= criteria.from) &&
-          (!criteria.to || incident.incident_date! <= criteria.to))
-      : undefined;
+          (!criteria.to || incident.incident_date! <= criteria.to));
     if (firstNotice?.center && map) map.flyTo(firstNotice.center, 12);
     if (firstReport && !firstNotice) setSelectedPosition([firstReport.latitude, firstReport.longitude]);
 

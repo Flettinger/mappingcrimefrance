@@ -122,7 +122,7 @@ function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] })
     <>
       <strong>{notice.city}</strong>
       <p>{notice.date}{notice.center ? " · Localisation approximative" : " · Avis consultable dans la liste"}</p>
-      <a className="underline" href={"https://www.arpd.fr/fr/disparition-" + notice.slug}>Consulter l’avis sur l’ARPD</a>
+      <a className="underline" target="_blank" rel="noopener noreferrer" href={"https://www.arpd.fr/fr/disparition-" + notice.slug}>Consulter l’avis sur l’ARPD</a>
     </>
   );
 }
@@ -1026,8 +1026,8 @@ export default function Home() {
                               </article>
                             ))}
                             <p className="flex flex-wrap gap-3">
-                              <a className="underline" href="https://www.arpd.fr/fr/recherche-disparition-accueil">Avis de l’ARPD</a>
-                              <a className="underline" href="https://www.116000enfantsdisparus.fr/avis-de-recherche/">116 000 Enfants Disparus</a>
+                              <a className="underline" target="_blank" rel="noopener noreferrer" href="https://www.arpd.fr/fr/recherche-disparition-accueil">Avis de l’ARPD</a>
+                              <a className="underline" target="_blank" rel="noopener noreferrer" href="https://www.116000enfantsdisparus.fr/avis-de-recherche/">116 000 Enfants Disparus</a>
                             </p>
 
                           </div>

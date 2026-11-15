@@ -966,6 +966,21 @@ export default function Home() {
               })}
             </div>
           </section>
+          <details className="mb-4 rounded-lg border border-gray-700 p-3">
+            <summary className="cursor-pointer rounded-md bg-sky-900 px-3 py-2 font-bold text-white">
+              Alertes communales
+            </summary>
+            <div className="mt-3 space-y-3 text-sm text-gray-300">
+              <h2 className="font-semibold text-white">Hautes-Alpes</h2>
+              <p>Consultez les alertes et informations directement auprès de votre commune.</p>
+              <ul className="space-y-2">
+                <li><a className="underline" href="https://app.panneaupocket.com/ville/1326310230-le-glaizil-05800">Le Glaizil · PanneauPocket</a></li>
+                <li><a className="underline" href="https://app.panneaupocket.com/ville/867758662-saint-bonnet-en-champsaur-05500">Saint-Bonnet-en-Champsaur · PanneauPocket</a></li>
+                <li><a className="underline" href="https://www.mairie-saint-bonnet.net/vie-pratique/autres-services/gendarmerie">Saint-Bonnet-en-Champsaur · Alertes de la gendarmerie</a></li>
+                <li><a className="underline" href="https://www.ville-gap.fr/securite-publique/">Gap · Informations de sécurité publique</a></li>
+              </ul>
+            </div>
+          </details>
         </aside>
 
         <section className="order-1 md:order-2 flex-1 relative h-[58vh] md:h-full">

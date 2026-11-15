@@ -17,7 +17,7 @@ const styles: Record<string, [string, string, string?]> = {
   Menaces: ["#59404a", "MENACES"],
   "Violences conjugales": ["#872053", "VIOLENCES", "CONJUGALES"],
   Dégradation: ["#485322", "DÉGRADATION"],
-  "Incendie volontaire": ["#982e0c", "INCENDIE", "VOLONTAIRE"],
+  "Incendie volontaire": ["#00758f", "INCENDIE", "VOLONTAIRE"],
   Escroquerie: ["#155b64", "ESCROQUERIE"],
   "Arnaque internet": ["#245d9a", "ARNAQUE", "INTERNET"],
   "Trafic de stupéfiants": ["#166534", "TRAFIC DE", "STUPÉFIANTS"],

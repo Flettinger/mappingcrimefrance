@@ -127,6 +127,93 @@ function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] })
   );
 }
 
+const legendCategories = [
+  {
+    "type": "Vol simple",
+    "label": "Vol simple"
+  },
+  {
+    "type": "Cambriolage",
+    "label": "Cambriolage"
+  },
+  {
+    "type": "Car-jacking",
+    "label": "Car-jacking"
+  },
+  {
+    "type": "Agression physique",
+    "label": "Agression physique"
+  },
+  {
+    "type": "Incendie volontaire",
+    "label": "Incendie volontaire"
+  },
+  {
+    "type": "Accident",
+    "label": "Accident"
+  },
+  {
+    "type": "Trafic de stupéfiants",
+    "label": "Trafic de stupéfiants"
+  },
+  {
+    "type": "Rodéo urbain",
+    "label": "Rodéo urbain"
+  },
+  {
+    "type": "Nuisances / tapage",
+    "label": "Nuisances / tapage"
+  },
+  {
+    "type": "Disparition inquiétante",
+    "label": "Disparition"
+  },
+  {
+    "type": "Homicide",
+    "label": "Homicide"
+  }
+];
+const reportTypes = [
+  "Vol simple",
+  "Vol à main armée",
+  "Car-jacking",
+  "Cambriolage",
+  "Tentative de cambriolage",
+  "Agression physique",
+  "Agression sexuelle",
+  "Viol",
+  "Dégradation",
+  "Incendie volontaire",
+  "Escroquerie",
+  "Trafic de stupéfiants",
+  "Rodéo urbain",
+  "Nuisances / tapage",
+  "Violences conjugales",
+  "Disparition inquiétante",
+  "Accident",
+  "Homicide"
+];
+const missingPersonType = "Disparition inquiétante";
+const frenchMonths = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+function normalizeSearch(value: string) {
+  return value.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function noticeMatches(notice: ResearchNotice, sector: string, from: string, to: string) {
+  if (sector && !normalizeSearch(notice.city).includes(normalizeSearch(sector))) return false;
+  if (!from && !to) return true;
+  const match = /^(?:(\d{1,2})(?:er)?\s+)?(\p{L}+)\s+(\d{4})$/u.exec(notice.date.trim().toLowerCase());
+  if (!match) return false;
+  const [, day, month, year] = match;
+  const monthIndex = frenchMonths.indexOf(month);
+  if (monthIndex < 0) return false;
+  const prefix = year + "-" + String(monthIndex + 1).padStart(2, "0") + "-";
+  const first = prefix + (day ? day.padStart(2, "0") : "01");
+  const last = day ? first : prefix + new Date(Number(year), monthIndex + 1, 0).getDate();
+  return (!from || last >= from) && (!to || first <= to);
+}
+
 type Incident = {
   id: number;
   type: string;
@@ -144,8 +231,10 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAADOpg7umNlyQBlo-";
 
 export default function Home() {
   const [showNotices, setShowNotices] = useState(false);
-  // Avis consultés le 15 novembre. Une nouvelle vérification est requise après le 21.
-  const notices = showNotices && Date.now() < Date.parse("2026-11-22T00:00:00+01:00") ? researchNotices : [];
+  const [openCategory, setOpenCategory] = useState("");
+  const [searchType, setSearchType] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState({ type: "", sector: "", from: "", to: "" });
+  const searchRequest = useRef(0);
   const [showForm, setShowForm] = useState(false);
   const [showAlertForm, setShowAlertForm] = useState(false);
 
@@ -174,6 +263,19 @@ export default function Home() {
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const filteredIncidents = incidents.filter((incident) => !appliedSearch.type || incident.type === appliedSearch.type);
+  const categoryTypes = new Set(legendCategories.map((category) => category.type));
+  const extraCategories = [...new Set([...reportTypes, ...incidents.map((incident) => incident.type)])]
+    .filter((type) => !categoryTypes.has(type))
+    .sort((a, b) => a.localeCompare(b, "fr"))
+    .map((type) => ({ type, label: type }));
+  const categories = [...legendCategories, ...extraCategories];
+  const showMissingPersons = showNotices && openCategory === missingPersonType;
+  // Avis consultés le 15 novembre. Une nouvelle vérification est requise après le 21.
+  const notices = (showMissingPersons || appliedSearch.type === missingPersonType)
+    && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
+    ? researchNotices.filter((notice) => noticeMatches(notice, appliedSearch.sector, appliedSearch.from, appliedSearch.to))
+    : [];
   const [showLegend, setShowLegend] = useState(false);
   const [icons, setIcons] = useState<IncidentIcons | null>(null);
   const [map, setMap] = useState<any>(null);
@@ -224,28 +326,42 @@ export default function Home() {
   }, [showForm, turnstileLoaded]);
 
   async function loadIncidents() {
+    const request = ++searchRequest.current;
     const response = await fetch(`${API_URL}/incidents`);
     const data = await response.json();
-    setIncidents(data);
+    if (request === searchRequest.current && Array.isArray(data)) setIncidents(data);
   }
 
   async function searchIncidents() {
+    const request = ++searchRequest.current;
+    const criteria = { type: searchType, sector: searchSector.trim(), from: dateFrom, to: dateTo };
     const params = new URLSearchParams();
-    if (searchSector.trim()) params.append("sector", searchSector.trim());
-    if (dateFrom) params.append("date_from", dateFrom);
-    if (dateTo) params.append("date_to", dateTo);
+    if (criteria.sector) params.set("sector", criteria.sector);
+    if (criteria.from) params.set("date_from", criteria.from);
+    if (criteria.to) params.set("date_to", criteria.to);
 
     const response = await fetch(`${API_URL}/incidents?${params.toString()}`);
-    const data = await response.json();
-    setIncidents(data);
+    const data: Incident[] = await response.json();
+    if (request !== searchRequest.current || !Array.isArray(data)) return;
 
-    if (data.length > 0) {
-      setSelectedPosition([data[0].latitude, data[0].longitude]);
-    }
+    setIncidents(data);
+    setAppliedSearch(criteria);
+    setShowNotices(true);
+    setOpenCategory(criteria.type);
+    const firstIncident = data.find((incident) => !criteria.type || incident.type === criteria.type);
+    const firstNotice = criteria.type === missingPersonType && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
+      ? researchNotices.find((notice) => notice.center && noticeMatches(notice, criteria.sector, criteria.from, criteria.to))
+      : undefined;
+    if (firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
+    else if (firstNotice?.center && map) map.flyTo(firstNotice.center, 12);
   }
 
   async function resetSearch() {
     setSearchSector("");
+    setSearchType("");
+    setAppliedSearch({ type: "", sector: "", from: "", to: "" });
+    setOpenCategory("");
+    setSelectedPosition(null);
     setDateFrom("");
     setDateTo("");
     await loadIncidents();
@@ -464,16 +580,16 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-black text-white md:h-screen md:overflow-hidden">
+    <main className="min-h-screen w-full bg-black text-white md:flex md:h-screen md:flex-col md:overflow-hidden">
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
         onLoad={() => setTurnstileLoaded(true)}
       />
 
-      <header className="bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:h-[170px] md:px-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
-          <div className="w-full md:w-[650px] text-center">
+      <header className="bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:shrink-0 md:px-6">
+        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
+          <div className="w-full md:w-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               <span className="text-blue-500">Mapping</span>
               <span className="text-white">Crime</span>
@@ -503,7 +619,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 grid grid-cols-1 gap-3 md:grid-cols-[1.6fr_0.85fr_0.85fr_0.75fr_0.75fr_1fr] md:gap-4 md:items-end">
+          <div className="order-last grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 md:items-end xl:grid-cols-[1.5fr_1fr_1fr_1.45fr_1fr_1fr_1.2fr]">
             <div>
               <label className="block text-sm font-semibold mb-2">Recherche</label>
               <input
@@ -534,6 +650,15 @@ export default function Home() {
               />
             </div>
 
+            <div>
+              <label htmlFor="search-type" className="mb-2 block text-sm font-semibold">Type de délit</label>
+              <select id="search-type" value={searchType} onChange={(event) => setSearchType(event.target.value)}
+                className="h-11 w-full min-w-0 rounded-lg border border-gray-700 bg-[#111] px-3 text-white">
+                <option value="">Tous les types</option>
+                {categories.map(({ type, label }) => <option key={type} value={type}>{label}</option>)}
+              </select>
+            </div>
+
             <button
               onClick={searchIncidents}
               className="h-11 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
@@ -561,7 +686,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hidden md:flex gap-3 items-end pt-[86px]">
+          <div className="hidden md:flex flex-wrap gap-3">
             <button
               onClick={() => setShowForm(true)}
               className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg whitespace-nowrap"
@@ -579,7 +704,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex flex-col md:flex-row md:h-[calc(100vh-170px)]">
+      <div className="flex flex-col md:min-h-0 md:flex-1 md:flex-row">
         <aside className="order-2 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">
           <section className="mb-4 rounded-lg border border-gray-700 p-3">
             <button type="button" aria-expanded={showNotices} aria-controls="search-notices"
@@ -588,73 +713,85 @@ export default function Home() {
               Avis de recherche
             </button>
             <div id="search-notices" hidden={!showNotices} className="mt-3 space-y-3 text-sm">
-              <p>Consultez la source pour connaître l’état de la recherche.</p>
-              {notices.length === 0 && <p>Aucun repère vérifié récemment.</p>}
-              {notices.map((notice) => (
-                <article key={notice.slug} className="space-y-1 rounded-md bg-gray-900 p-3">
-                  <NoticeDetails notice={notice} />
-                  {notice.center && <button type="button" className="block text-violet-300 underline" onClick={() => {
-                    if (!map || !notice.center) return;
-                    map.getContainer().scrollIntoView({ block: "nearest" });
-                    map.flyTo(notice.center, 12);
-                  }}>Voir sur la carte</button>}
-                </article>
-              ))}
-              <p className="flex flex-wrap gap-3">
-                <a className="underline" href="https://www.arpd.fr/fr/recherche-disparition-accueil">Avis de l’ARPD</a>
-                <a className="underline" href="https://www.116000enfantsdisparus.fr/avis-de-recherche/">116 000 Enfants Disparus</a>
-              </p>
-            </div>
-          </section>
-          <h2 className="text-xl md:text-2xl font-bold mb-4">
-            Incidents publiés ({incidents.length})
-          </h2>
+              {categories.filter(({ type }) => !appliedSearch.type || type === appliedSearch.type).map(({ type, label }) => {
+                const categoryIncidents = filteredIncidents.filter((incident) => incident.type === type);
+                const expanded = openCategory === type;
+                const count = categoryIncidents.length + (type === missingPersonType ? notices.length : 0);
+                return (
+                  <div key={type} className="rounded-md border border-gray-800">
+                    <button type="button" aria-expanded={expanded}
+                      className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-gray-900"
+                      onClick={() => setOpenCategory(expanded ? "" : type)}>
+                      <span>{label}</span>
+                      <span className="text-gray-400" aria-hidden="true">{expanded ? "−" : "+"}</span>
+                    </button>
+                    {expanded && (
+                      <div className="space-y-2 px-2 pb-2">
+                        {count === 0 && <p className="px-1 text-gray-300">Aucun avis ou signalement trouvé.</p>}
+                        {categoryIncidents.map((incident) => (
+                          <button
+                            key={incident.id}
+                            onClick={() =>
+                              setSelectedPosition([incident.latitude, incident.longitude])
+                            }
+                            className="w-full text-left bg-[#111] p-3 rounded-lg border border-gray-800 hover:border-red-500 transition"
+                          >
+                            <div className="flex gap-3">
+                              <div className="h-12 w-12 rounded-lg bg-red-600 flex items-center justify-center font-bold shrink-0">
+                                !
+                              </div>
 
-          <div className="space-y-3">
-            {incidents.length === 0 && (
-              <div className="bg-gray-900 p-4 rounded-lg border border-gray-800 text-gray-300">
-                Aucun incident trouvé.
-              </div>
-            )}
+                              <div className="flex-1">
+                                <div className="text-red-400 font-bold text-lg">
+                                  {incident.type}
+                                </div>
 
-            {incidents.map((incident) => (
-              <button
-                key={incident.id}
-                onClick={() =>
-                  setSelectedPosition([incident.latitude, incident.longitude])
-                }
-                className="w-full text-left bg-[#111] p-4 rounded-lg border border-gray-800 hover:border-red-500 transition"
-              >
-                <div className="flex gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-red-600 flex items-center justify-center font-bold shrink-0">
-                    !
-                  </div>
+                                {incident.incident_time && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    Horaire : {incident.incident_time}
+                                  </div>
+                                )}
 
-                  <div className="flex-1">
-                    <div className="text-red-400 font-bold text-lg">
-                      {incident.type}
-                    </div>
+                                <div className="text-gray-300 text-sm mt-1">
+                                  {incident.address}
+                                </div>
 
-                    {incident.incident_time && (
-                      <div className="text-xs text-gray-400 mt-1">
-                        Horaire : {incident.incident_time}
+                                <div className="text-sm mt-2 leading-relaxed">
+                                  {incident.description}
+                                </div>
+
+                                {renderMedia(incident)}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                        {type === missingPersonType && (
+                          <div className="space-y-2">
+                            <p className="text-gray-300">Consultez l’avis d’origine pour connaître l’état de la recherche.</p>
+                            {notices.map((notice) => (
+                              <article key={notice.slug} className="space-y-1 rounded-md bg-gray-900 p-3">
+                                <NoticeDetails notice={notice} />
+                                {notice.center && <button type="button" className="block text-violet-300 underline" onClick={() => {
+                                  if (!map || !notice.center) return;
+                                  map.getContainer().scrollIntoView({ block: "nearest" });
+                                  map.flyTo(notice.center, 12);
+                                }}>Voir sur la carte</button>}
+                              </article>
+                            ))}
+                            <p className="flex flex-wrap gap-3">
+                              <a className="underline" href="https://www.arpd.fr/fr/recherche-disparition-accueil">Avis de l’ARPD</a>
+                              <a className="underline" href="https://www.116000enfantsdisparus.fr/avis-de-recherche/">116 000 Enfants Disparus</a>
+                            </p>
+
+                          </div>
+                        )}
                       </div>
                     )}
-
-                    <div className="text-gray-300 text-sm mt-1">
-                      {incident.address}
-                    </div>
-
-                    <div className="text-sm mt-2 leading-relaxed">
-                      {incident.description}
-                    </div>
-
-                    {renderMedia(incident)}
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          </section>
         </aside>
 
         <section className="order-1 md:order-2 flex-1 relative h-[58vh] md:h-full">
@@ -679,7 +816,7 @@ export default function Home() {
             )}
 
             {icons &&
-              incidents.map((incident) => (
+              filteredIncidents.map((incident) => (
                 <Marker
                   key={incident.id}
                   position={[incident.latitude, incident.longitude]}
@@ -719,19 +856,7 @@ export default function Home() {
   <h3 className="font-bold mb-3 text-base">Légende</h3>
   <div className="space-y-2 text-xs">
     {icons && (
-      <>
-        <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
-        <LegendItem icon={icons["Cambriolage"]} label="Cambriolage" />
-        <LegendItem icon={icons["Car-jacking"]} label="Car-jacking" />
-        <LegendItem icon={icons["Agression physique"]} label="Agression physique" />
-        <LegendItem icon={icons["Incendie volontaire"]} label="Incendie volontaire" />
-        <LegendItem icon={icons["Accident"]} label="Accident" />
-        <LegendItem icon={icons["Trafic de stupéfiants"]} label="Trafic de stupéfiants" />
-        <LegendItem icon={icons["Rodéo urbain"]} label="Rodéo urbain" />
-        <LegendItem icon={icons["Nuisances / tapage"]} label="Nuisances / tapage" />
-        <LegendItem icon={icons["Disparition inquiétante"]} label="Disparition" />
-        <LegendItem icon={icons["Homicide"]} label="Homicide" />
-      </>
+      legendCategories.map(({ type, label }) => <LegendItem key={type} icon={icons[type]} label={label} />)
     )}
   </div>
 </div>
@@ -759,19 +884,7 @@ export default function Home() {
 
       <div className="space-y-3 text-sm">
         {icons && (
-          <>
-            <LegendItem icon={icons["Vol simple"]} label="Vol simple" />
-            <LegendItem icon={icons["Cambriolage"]} label="Cambriolage" />
-            <LegendItem icon={icons["Car-jacking"]} label="Car-jacking" />
-            <LegendItem icon={icons["Agression physique"]} label="Agression physique" />
-            <LegendItem icon={icons["Incendie volontaire"]} label="Incendie volontaire" />
-            <LegendItem icon={icons["Accident"]} label="Accident" />
-            <LegendItem icon={icons["Trafic de stupéfiants"]} label="Trafic de stupéfiants" />
-            <LegendItem icon={icons["Rodéo urbain"]} label="Rodéo urbain" />
-            <LegendItem icon={icons["Nuisances / tapage"]} label="Nuisances / tapage" />
-            <LegendItem icon={icons["Disparition inquiétante"]} label="Disparition" />
-            <LegendItem icon={icons["Homicide"]} label="Homicide" />
-          </>
+          legendCategories.map(({ type, label }) => <LegendItem key={type} icon={icons[type]} label={label} />)
         )}
       </div>
     </div>
@@ -817,24 +930,8 @@ export default function Home() {
               onChange={(e) => setType(e.target.value)}
               className="w-full p-3 rounded bg-black border border-gray-700 mb-4"
             >
-              <option>Vol simple</option>
-              <option>Vol à main armée</option>
-              <option>Car-jacking</option>
-              <option>Cambriolage</option>
-              <option>Tentative de cambriolage</option>
-              <option>Agression physique</option>
-              <option>Agression sexuelle</option>
-              <option>Viol</option>
-              <option>Dégradation</option>
-              <option>Incendie volontaire</option>
-              <option>Escroquerie</option>
-              <option>Trafic de stupéfiants</option>
-              <option>Rodéo urbain</option>
-              <option>Nuisances / tapage</option>
-              <option>Violences conjugales</option>
-              <option>Disparition inquiétante</option>
-              <option>Accident</option>
-              <option>Homicide</option>
+
+              {reportTypes.map((type) => <option key={type}>{type}</option>)}
             </select>
 
             <label className="block mb-2">Horaire de l’incident</label>

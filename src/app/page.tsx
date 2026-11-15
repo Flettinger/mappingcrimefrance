@@ -221,6 +221,8 @@ type Incident = {
   description: string;
   latitude: number;
   longitude: number;
+  incident_date?: string | null;
+  video_url?: string | null;
   incident_time?: string | null;
   media_url?: string | null;
   media_type?: string | null;
@@ -246,6 +248,8 @@ export default function Home() {
   const [city, setCity] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("Vol simple");
+  const [incidentDate, setIncidentDate] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [incidentTime, setIncidentTime] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -460,6 +464,17 @@ export default function Home() {
       return;
     }
 
+    const videoLink = videoUrl.trim();
+    if (videoLink) {
+      try {
+        const url = new URL(videoLink);
+        if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error();
+      } catch {
+        alert("Saisissez un lien vidéo commençant par https:// ou http://.");
+        return;
+      }
+    }
+
     const fullAddress = `${streetNumber} ${streetName} ${postalCode} ${city}`;
 
     const { latitude, longitude, officialAddress } = await getAddressInfo(
@@ -481,6 +496,8 @@ export default function Home() {
     const newIncident = {
       reporter_email: reporterEmail.trim().toLowerCase(),
       type,
+      incident_date: incidentDate || null,
+      video_url: videoLink || null,
       incident_time: incidentTime || null,
       address: officialAddress,
       description: description.trim(),
@@ -506,6 +523,11 @@ export default function Home() {
       return;
     }
 
+    if (!response.ok) {
+      alert("Le signalement n’a pas pu être enregistré. Vérifiez les champs saisis.");
+      return;
+    }
+
     alert("Signalement envoyé pour validation.");
 
     setSelectedPosition([latitude, longitude]);
@@ -516,6 +538,8 @@ export default function Home() {
     setCity("");
     setDescription("");
     setType("Vol simple");
+    setIncidentDate("");
+    setVideoUrl("");
     setIncidentTime("");
     setMediaFile(null);
     setCaptchaToken("");
@@ -623,7 +647,7 @@ export default function Home() {
                 onClick={() => setShowAlertForm(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg"
               >
-                Inscription pour recevoir des alertes
+                Inscription pour recevoir des alertes autour de chez vous
               </button>
             </div>
           </div>
@@ -707,7 +731,7 @@ export default function Home() {
               onClick={() => setShowAlertForm(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg whitespace-nowrap"
             >
-              Inscription pour recevoir des alertes
+              Inscription pour recevoir des alertes autour de chez vous
             </button>
           </div>
         </div>
@@ -719,7 +743,7 @@ export default function Home() {
             <button type="button" aria-expanded={showNotices} aria-controls="search-notices"
               className="w-full rounded-md bg-violet-800 px-3 py-2 text-left font-bold"
               onClick={() => setShowNotices((open) => !open)}>
-              Avis de recherche
+              Catégories
             </button>
             <div id="search-notices" hidden={!showNotices} className="mt-3 space-y-3 text-sm">
               {searchError && <p role="status" className="text-amber-200">Les signalements citoyens sont momentanément indisponibles.</p>}
@@ -756,6 +780,7 @@ export default function Home() {
                                   {incident.type}
                                 </div>
 
+                                {incident.incident_date && <div>Date : {incident.incident_date.split("-").reverse().join("/")}</div>}
                                 {incident.incident_time && (
                                   <div className="text-xs text-gray-400 mt-1">
                                     Horaire : {incident.incident_time}
@@ -771,6 +796,7 @@ export default function Home() {
                                 </div>
 
                                 {renderMedia(incident)}
+                                    {incident.video_url && <span className="mt-2 block text-sm text-gray-300">Lien vidéo disponible sur la carte</span>}
                               </div>
                             </div>
                           </button>
@@ -835,6 +861,10 @@ export default function Home() {
                   <Popup>
                     <strong>{incident.type}</strong>
                     <br />
+                    {incident.incident_date && <div>Date : {incident.incident_date.split("-").reverse().join("/")}</div>}
+                    {incident.video_url && /^https?:\/\//i.test(incident.video_url) && (
+                      <div><a href={incident.video_url} target="_blank" rel="noopener noreferrer">Voir la vidéo</a></div>
+                    )}
                     {incident.incident_time && (
                       <>
                         Horaire : {incident.incident_time}
@@ -944,8 +974,14 @@ export default function Home() {
               {reportTypes.map((type) => <option key={type}>{type}</option>)}
             </select>
 
-            <label className="block mb-2">Horaire de l’incident</label>
+            <label htmlFor="incident-date" className="block mb-2">Date de l’incident</label>
+            <input id="incident-date" type="date" value={incidentDate}
+              onChange={(event) => setIncidentDate(event.target.value)}
+              className="w-full p-3 rounded bg-black border border-gray-700 mb-4" />
+
+            <label htmlFor="incident-time" className="block mb-2">Horaire de l’incident</label>
             <input
+              id="incident-time"
               type="time"
               value={incidentTime}
               onChange={(e) => setIncidentTime(e.target.value)}
@@ -995,6 +1031,12 @@ export default function Home() {
               onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
               className="w-full p-3 rounded bg-black border border-gray-700 mb-4"
             />
+
+            <label htmlFor="incident-video-url" className="block mb-2">Lien vers une vidéo (facultatif)</label>
+            <input id="incident-video-url" type="url" value={videoUrl}
+              placeholder="https://..."
+              onChange={(event) => setVideoUrl(event.target.value)}
+              className="w-full p-3 rounded bg-black border border-gray-700 mb-4" />
 
             {mediaFile && (
               <div className="text-sm text-gray-300 mb-4">

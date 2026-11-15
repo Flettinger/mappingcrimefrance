@@ -6,7 +6,7 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional
@@ -15,8 +15,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, Header, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from sqlalchemy import Column, Float, Integer, String, Text, TIMESTAMP, Time, create_engine
+from pydantic import BaseModel, HttpUrl
+from sqlalchemy import Column, Date, Float, Integer, String, Text, TIMESTAMP, Time, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
 
@@ -55,6 +55,8 @@ class IncidentDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     reporter_email = Column(Text, nullable=True)
     type = Column(String(100), nullable=False)
+    incident_date = Column(Date, nullable=True)
+    video_url = Column(Text, nullable=True)
     incident_time = Column(Time, nullable=True)
     address = Column(Text, nullable=False)
     description = Column(Text)
@@ -81,6 +83,9 @@ class SubscriberDB(Base):
 
 # IMPORTANT : créer les tables APRÈS la définition des modèles
 Base.metadata.create_all(bind=engine)
+with engine.begin() as connection:
+    connection.execute(text("ALTER TABLE incidents ADD COLUMN IF NOT EXISTS incident_date DATE"))
+    connection.execute(text("ALTER TABLE incidents ADD COLUMN IF NOT EXISTS video_url TEXT"))
 
 
 app.add_middleware(
@@ -101,6 +106,8 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 class IncidentCreate(BaseModel):
     reporter_email: str
     type: str
+    incident_date: Optional[date] = None
+    video_url: Optional[HttpUrl] = None
     incident_time: Optional[str] = None
     address: str
     description: str
@@ -270,8 +277,8 @@ def root():
 @app.get("/incidents")
 def get_incidents(
     sector: Optional[str] = Query(None),
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
 ):
     db = SessionLocal()
     query = db.query(IncidentDB).filter(IncidentDB.status == "approved")
@@ -279,11 +286,12 @@ def get_incidents(
     if sector:
         query = query.filter(IncidentDB.address.ilike(f"%{sector}%"))
 
+    event_date = func.coalesce(IncidentDB.incident_date, func.date(IncidentDB.created_at))
     if date_from:
-        query = query.filter(IncidentDB.created_at >= datetime.fromisoformat(date_from))
+        query = query.filter(event_date >= date_from)
 
     if date_to:
-        query = query.filter(IncidentDB.created_at <= datetime.fromisoformat(date_to))
+        query = query.filter(event_date <= date_to)
 
     incidents = query.order_by(IncidentDB.created_at.desc()).all()
     db.close()
@@ -347,6 +355,8 @@ def create_incident(incident: IncidentCreate, request: Request):
     new_incident = IncidentDB(
         reporter_email=incident.reporter_email.strip().lower(),
         type=incident.type,
+        incident_date=incident.incident_date,
+        video_url=str(incident.video_url) if incident.video_url else None,
         incident_time=incident.incident_time if incident.incident_time else None,
         address=incident.address,
         description=incident.description,

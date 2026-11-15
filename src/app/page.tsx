@@ -50,6 +50,16 @@ const researchNotices = [
   { city: "Sathonay-Camp (69)", date: "3 novembre 2026", center: [45.82, 4.87], slug: "lois-marechal-61-ans-disparu-de-sathonay-camp-69-le-03-novembre-2026" },
   { city: "Créteil (94)", date: "1er novembre 2026", center: [48.79, 2.46], slug: "alain-badin-70-ans-disparu-creteil-94-le-01-novembre-2026" },
   { city: "Chanteloup-les-Vignes (78)", date: "30 octobre 2026", center: [48.98, 2.03], slug: "celie-ngameni-33-ans-disparue-depuis-le-30-octobre-2026-chanteloup-les-vignes-78" },
+  { city: "Périssac (33)", date: "2 novembre 2026", center: [45.02, -0.33], slug: "david-tovar-56-ans-disparu-perissac-33-le-02-novembre-2026" },
+  { city: "Béganne (56)", date: "28 octobre 2026", center: [47.6, -2.24], slug: "michel-boulo-78-ans-disparu-le28-octobre-2026-beganne-56" },
+  { city: "Baillif (Guadeloupe)", date: "21 octobre 2026", center: [16.02, -61.75], slug: "christophe-le-rouzes-42-ans-disparu-baillif-le-21-octobre-2026" },
+  { city: "Lavaur (81)", date: "19 octobre 2026", center: [43.7, 1.82], slug: "laurent-cortese-49-ans-disparu-lavaur-81-le-19-octobre-2026" },
+  { city: "Sarzeau (56)", date: "14 octobre 2026", center: [47.53, -2.77], slug: "claude-cocherel-73-ans-disparu-le-14-octobre-2026-sarzeau-56" },
+  { city: "Dechy (59)", date: "10 octobre 2026", center: [50.35, 3.13], slug: "jean-claude-accou-80-ans-disparu-depuis-le-10-octobre-2026-dechy-59" },
+  { city: "Rennes (35)", date: "4 octobre 2026", center: [48.11, -1.68], slug: "benoit-bilheude-56-ans-disparu-le-4-octobre-2026-rennes-35" },
+  { city: "La Rochelle (17)", date: "16 septembre 2026", center: [46.16, -1.15], slug: "philippe-meheust-62-ans-disparu-la-rochelle-le-16-septembre-2026" },
+  { city: "Montauban (82)", date: "26 juin 2026", center: [44.02, 1.36], slug: "merlin-collot-20-ans-disparu-depuis-le-26-juin-2026-montauban-82" },
+  { city: "Caen (14)", date: "20 janvier 2026", center: [49.18, -0.37], slug: "maxime-bruno-30-ans-disparu-le-20-janvier-2026-caen-14" },
 ] satisfies { city: string; date: string; center?: [number, number]; slug: string }[];
 
 function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] }) {

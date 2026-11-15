@@ -11,6 +11,8 @@ type Incident = {
   latitude: number;
   longitude: number;
   status: string;
+  incident_date?: string | null;
+  video_url?: string | null;
   media_url?: string | null;
   media_type?: string | null;
 };
@@ -210,6 +212,10 @@ function IncidentCard({
 
       <div className="mb-3">{incident.description}</div>
 
+      {incident.incident_date && <p>Date de l’incident : {incident.incident_date.split("-").reverse().join("/")}</p>}
+      {incident.video_url && /^https?:\/\//i.test(incident.video_url) && (
+        <a href={incident.video_url} target="_blank" rel="noopener noreferrer" className="underline">Ouvrir le lien vidéo</a>
+      )}
       {incident.media_url && (
         <div className="mb-4">
           {incident.media_type === "video" ? (

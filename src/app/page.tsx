@@ -496,6 +496,18 @@ export default function Home() {
 
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-170px)]">
         <aside className="order-2 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">
+          <details className="mb-4 rounded-lg border border-gray-700 p-3">
+            <summary className="cursor-pointer rounded-md bg-violet-800 px-3 py-2 font-bold text-white">
+              Avis de recherche
+            </summary>
+            <div className="mt-3 space-y-2 text-sm text-gray-300">
+              <p>Consultez les avis d’origine pour connaître le lieu indiqué et l’état de la recherche.</p>
+              <ul className="space-y-1">
+                <li><a className="underline" href="https://www.arpd.fr/fr/recherche-disparition-accueil">Avis publics de l’ARPD</a></li>
+                <li><a className="underline" href="https://www.116000enfantsdisparus.fr/avis-de-recherche/">116 000 Enfants Disparus</a></li>
+              </ul>
+            </div>
+          </details>
           <h2 className="text-xl md:text-2xl font-bold mb-4">
             Incidents publiés ({incidents.length})
           </h2>

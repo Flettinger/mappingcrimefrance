@@ -24,6 +24,7 @@ const styles: Record<string, [string, string, string?]> = {
   "Rodéo urbain": ["#765500", "RODÉO URBAIN"],
   "Nuisances / tapage": ["#007268", "NUISANCES", "TAPAGE"],
   "Disparition inquiétante": ["#790447", "DISPARITION"],
+  "Alerte communale": ["#16445e", "ALERTE", "COMMUNALE"],
   Accident: ["#07557b", "ACCIDENT"],
   Homicide: ["#31283b", "HOMICIDE"],
   Autre: ["#45515f", "AUTRE"],

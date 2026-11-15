@@ -233,6 +233,7 @@ export default function Home() {
   const [showNotices, setShowNotices] = useState(false);
   const [openCategory, setOpenCategory] = useState("");
   const [searchType, setSearchType] = useState("");
+  const [searchError, setSearchError] = useState(false);
   const [appliedSearch, setAppliedSearch] = useState({ type: "", sector: "", from: "", to: "" });
   const searchRequest = useRef(0);
   const [showForm, setShowForm] = useState(false);
@@ -340,25 +341,34 @@ export default function Home() {
     if (criteria.from) params.set("date_from", criteria.from);
     if (criteria.to) params.set("date_to", criteria.to);
 
-    const response = await fetch(`${API_URL}/incidents?${params.toString()}`);
-    const data: Incident[] = await response.json();
-    if (request !== searchRequest.current || !Array.isArray(data)) return;
-
-    setIncidents(data);
     setAppliedSearch(criteria);
     setShowNotices(true);
     setOpenCategory(criteria.type);
-    const firstIncident = data.find((incident) => !criteria.type || incident.type === criteria.type);
+    setSearchError(false);
+    setIncidents([]);
     const firstNotice = criteria.type === missingPersonType && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
       ? researchNotices.find((notice) => notice.center && noticeMatches(notice, criteria.sector, criteria.from, criteria.to))
       : undefined;
-    if (firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
-    else if (firstNotice?.center && map) map.flyTo(firstNotice.center, 12);
+    if (firstNotice?.center && map) map.flyTo(firstNotice.center, 12);
+
+    try {
+      const response = await fetch(`${API_URL}/incidents?${params.toString()}`);
+      if (!response.ok) throw new Error("Signalements indisponibles");
+      const data: Incident[] = await response.json();
+      if (!Array.isArray(data)) throw new Error("Réponse de recherche invalide");
+      if (request !== searchRequest.current) return;
+      setIncidents(data);
+      const firstIncident = data.find((incident) => !criteria.type || incident.type === criteria.type);
+      if (!firstNotice && firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
+    } catch {
+      if (request === searchRequest.current) setSearchError(true);
+    }
   }
 
   async function resetSearch() {
     setSearchSector("");
     setSearchType("");
+    setSearchError(false);
     setAppliedSearch({ type: "", sector: "", from: "", to: "" });
     setOpenCategory("");
     setSelectedPosition(null);
@@ -713,6 +723,7 @@ export default function Home() {
               Avis de recherche
             </button>
             <div id="search-notices" hidden={!showNotices} className="mt-3 space-y-3 text-sm">
+              {searchError && <p role="status" className="text-amber-200">Les signalements citoyens sont momentanément indisponibles.</p>}
               {categories.filter(({ type }) => !appliedSearch.type || type === appliedSearch.type).map(({ type, label }) => {
                 const categoryIncidents = filteredIncidents.filter((incident) => incident.type === type);
                 const expanded = openCategory === type;
@@ -727,7 +738,7 @@ export default function Home() {
                     </button>
                     {expanded && (
                       <div className="space-y-2 px-2 pb-2">
-                        {count === 0 && <p className="px-1 text-gray-300">Aucun avis ou signalement trouvé.</p>}
+                        {count === 0 && (!searchError || type === missingPersonType) && <p className="px-1 text-gray-300">Aucun avis ou signalement trouvé.</p>}
                         {categoryIncidents.map((incident) => (
                           <button
                             key={incident.id}

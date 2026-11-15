@@ -45,7 +45,9 @@ const Popup = dynamic<any>(
   { ssr: false }
 );
 
-const researchNotices = [
+type ResearchNotice = { city: string; date: string; center?: [number, number]; slug: string };
+
+const researchNotices: ResearchNotice[] = [
   { city: "Saint-Pierre (La Réunion)", date: "5 novembre 2026", center: [-21.34, 55.48], slug: "laurent-imare-52-ans-disparu-saint-pierre-le-05-novembre-2026" },
   { city: "Sathonay-Camp (69)", date: "3 novembre 2026", center: [45.82, 4.87], slug: "lois-marechal-61-ans-disparu-de-sathonay-camp-69-le-03-novembre-2026" },
   { city: "Créteil (94)", date: "1er novembre 2026", center: [48.79, 2.46], slug: "alain-badin-70-ans-disparu-creteil-94-le-01-novembre-2026" },
@@ -60,13 +62,66 @@ const researchNotices = [
   { city: "La Rochelle (17)", date: "16 septembre 2026", center: [46.16, -1.15], slug: "philippe-meheust-62-ans-disparu-la-rochelle-le-16-septembre-2026" },
   { city: "Montauban (82)", date: "26 juin 2026", center: [44.02, 1.36], slug: "merlin-collot-20-ans-disparu-depuis-le-26-juin-2026-montauban-82" },
   { city: "Caen (14)", date: "20 janvier 2026", center: [49.18, -0.37], slug: "maxime-bruno-30-ans-disparu-le-20-janvier-2026-caen-14" },
-] satisfies { city: string; date: string; center?: [number, number]; slug: string }[];
+  { city: "Pau (64)", date: "06 novembre 2026", center: [43.3, -0.37], slug: "tiya-kouassi-daron-16-ans-disparue-pau-64-le-06-novembre-2026" },
+  { city: "Paris, Porte Maillot (75)", date: "15 octobre 2026", center: [48.88, 2.28], slug: "octave-31-ans-disparu-paris-porte-maillot-75-le-15-octobre-2026" },
+  { city: "Secteur de Segré-en-Anjou Bleu (49)", date: "10 novembre 2026", center: [47.69, -0.87], slug: "yannick-robert-55-ans-disparu-le-10-novembre-secteur-segre-en-anjou-bleu-49" },
+  { city: "Paris 15e (75)", date: "11 octobre 2026", center: [48.84, 2.3], slug: "pierre-tomeselli-35-ans-disparu-le-11-octobre-2026-apres-avoir-quitte-paris-15eme" },
+  { city: "Lieu non précisé dans l’annuaire", date: "02 octobre 2026", slug: "nena-stevic-37-ans-disparue-depuis-le-02-octobre-2026" },
+  { city: "Roquebrune-sur-Argens (83)", date: "20 octobre 2026", center: [43.44, 6.64], slug: "michael-amsallem-disparu-roquebrune-sur-argens-83-le-20-octobre-2026" },
+  { city: "Genève (Suisse)", date: "21 juin 2026", slug: "jean-philippe-s-disparu-geneve-suisse-le-21-juin-2026" },
+  { city: "Fouesnant (29)", date: "14 juin 2026", center: [47.89, -4.01], slug: "yvonne-jestin-76-ans-disparu-le-14-juin-2026-fouesnant-29" },
+  { city: "Oberhoffen-sur-Moder (67)", date: "04 octobre 2026", center: [48.78, 7.86], slug: "leo-raeppel-14-ans-disparu-oberhoffen-sur-moder-67-le-04-octobre-2026" },
+  { city: "Strasbourg, Koenigshoffen (67)", date: "20 juillet 2026", center: [48.58, 7.7], slug: "amar-megat-51-ans-disparu-strasbourg-koenigshoffen-67-le-20-juillet-2026" },
+  { city: "Marne (51)", date: "12 septembre 2026", slug: "frederic-ricci-50-ans-disparu-depuis-le-12-septembre-2026-dans-la-marne-51" },
+  { city: "Saint-Nazaire (44)", date: "28 août 2026", center: [47.27, -2.21], slug: "tahis-16-ans-disparu-le-28-aout-2026-saint-nazaire-44" },
+  { city: "Poitiers (84)", date: "30 avril 2026", center: [46.58, 0.34], slug: "dylan-16-ans-en-fugue-depuis-le-30-avril-2026-poitiers-84" },
+  { city: "Plougasnou (29)", date: "23 juin 2026", center: [48.7, -3.79], slug: "guy-fouquet-71-ans-disparu-plougasnou-29-le-23-juin-2026" },
+  { city: "Caen (14)", date: "mars 2026", center: [49.18, -0.37], slug: "florian-aubry-39-ans-disparu-mars-2026-caen-14" },
+  { city: "Clamart (92)", date: "8 juillet 2026", center: [48.8, 2.26], slug: "ilian-ben-hammou-19-ans-disparu-le-8-juillet-2026-clamart-92" },
+  { city: "Herblay-sur-Seine (95)", date: "15 septembre 2026", center: [49, 2.16], slug: "marie-chognard-epouse-ferret-85-ans-disparue-herblay-95-le-15-septembre-2026" },
+  { city: "Londres (Royaume-Uni)", date: "25 mai 2026", slug: "marlon-marcus-morgan-46-ans-disparu-le-25-mai-2026-londres-royaume-uni" },
+  { city: "Le Mené (22)", date: "11 septembre 2026", center: [48.3, -2.52], slug: "yves-clement-63-ans-disparu-le-11-septembre-2026-le-mene-22" },
+  { city: "Étréaupont (02)", date: "09 septembre 2026", center: [49.91, 3.92], slug: "sullivan-couvreur-46-ans-disparu-etreaupont-02-le-09-septembre-2026" },
+  { city: "Paris 20e (75)", date: "08 juin 2026", center: [48.86, 2.4], slug: "claudia-cutillo-59-ans-disparu-le-08-juin-2026-paris-20eme" },
+  { city: "Sète (34)", date: "25 juillet 2026", center: [43.4, 3.7], slug: "georges-schmid-86-ans-disparu-sete-34-le-25-juillet-2026" },
+  { city: "Nouméa (Nouvelle-Calédonie)", date: "31 août 2026", center: [-22.27, 166.46], slug: "mailys-perriolat-16-ans-disparue-noumea-le-31-aout-2026" },
+  { city: "Tonneins (47)", date: "04 septembre 2026", center: [44.39, 0.31], slug: "daniel-pourtier-disparu-tonneins-47-le-04-septembre-2026" },
+  { city: "Saint-Joseph (La Réunion)", date: "18 avril 2026", center: [-21.38, 55.62], slug: "denis-duhamel-59-ans-disparu-saint-joseph-depuis-le-18-avril-2026" },
+  { city: "Aurillac (15)", date: "26 juin 2026", center: [44.93, 2.44], slug: "jalwa-safi-19-ans-disparue-depuis-le-26-juin-2026-aurillac-15" },
+  { city: "Bruville (54)", date: "22 août 2026", center: [49.14, 5.88], slug: "chloe-ledu-17-ans-disparu-le-22-aout-2026-bruville-54" },
+  { city: "Secteur de Vénosc / La Bérarde (38)", date: "25 août 2026", center: [44.99, 6.12], slug: "claire-tardy-45-ans-disparue-secteur-venosc-la-berarde-38-le-25-aout-2026" },
+  { city: "Flers-en-Escrebieux (59)", date: "24 août 2026", center: [50.4, 3.06], slug: "bruno-daubricourt-58-ans-disparu-flers-en-escrebieux-59-le-24-aout-2026" },
+  { city: "Melun (77)", date: "20 juin 2026", center: [48.54, 2.66], slug: "bernard-bidart-77-ans-disparu-depuis-le-20-juin-2026-melun-77" },
+  { city: "Grimaud (83)", date: "07 août 2026", center: [43.27, 6.52], slug: "siarguei-siarmiajka-41-ans-disparu-grimaud-83-le-07-aout-2026" },
+  { city: "Issoire (63)", date: "06 mai 2026", center: [45.54, 3.25], slug: "sylvie-bergougnoux-56-ans-disparue-issoire-63-le-06-mai-2026" },
+  { city: "Almaty (Kazakhstan)", date: "28 avril 2026", slug: "maximilien-alihan-garreau-disparu-almaty-kazakhstan-le-28-avril-2026" },
+  { city: "Orthez (64)", date: "12 août 2026", center: [43.49, -0.77], slug: "jean-lahitte-disparu-orthez-64-le-12-aout-2026" },
+  { city: "Strasbourg (67)", date: "09 août 2026", center: [48.58, 7.75], slug: "karim-ouelaa-52-ans-disparu-strasbourg-67-le-09-aout-2026" },
+  { city: "Capesterre-Belle-Eau (Guadeloupe)", date: "21 juin 2026", center: [16.04, -61.57], slug: "rozanne-bruny-epouse-gauthier-67-ans-disparue-capesterre-belle-eau-le-21-juin-2026" },
+  { city: "Saint-Denis (La Réunion)", date: "19 juillet 2026", center: [-20.88, 55.45], slug: "dominique-lizy-59-ans-disparu-saint-denis-la-reunion-le-19-juillet-2026" },
+  { city: "Chimay (Belgique)", date: "19 juillet 2026", slug: "michel-marion-86-ans-disparu-chimay-le-19-juillet-2026" },
+  { city: "Argelès-sur-Mer (66)", date: "14 juin 2026", center: [42.55, 3.02], slug: "anne-marie-morin-85-ans-disparue-argeles-sur-mer-66-le-14-juin-2026" },
+  { city: "Strasbourg (67)", date: "05 août 2026", center: [48.58, 7.75], slug: "miloiud-khalid-72-ans-disparu-strasbourg-67-le-05-aout-2026" },
+  { city: "Baixas (66)", date: "05 juillet 2026", center: [42.75, 2.81], slug: "aurore-nicolau-56-ans-disparue-baixas-66-le-05-juillet-2026" },
+  { city: "Les Abymes (Guadeloupe)", date: "20 juillet 2026", center: [16.27, -61.5], slug: "didier-jactar-58-ans-disparu-aux-abymes-le-20-juillet-2026" },
+  { city: "Roanne (42)", date: "17 juin 2026", center: [46.04, 4.07], slug: "gwen-girard-44-ans-disparu-roanne-42-le-17-juin-2026" },
+  { city: "Saint-Étienne (42)", date: "30 juin 2026", center: [45.44, 4.39], slug: "yihe-jin-40-ans-disparu-saint-etienne-42-le-30-juin-2026" },
+  { city: "Fécamp (76)", date: "17 juillet 2026", center: [49.76, 0.38], slug: "david-surble-52-ans-disparu-le-17-juillet-2026-fecamp-76" },
+  { city: "Frouzins (31)", date: "11 juillet 2026", center: [43.52, 1.33], slug: "dominique-barthe-disparue-frouzins-31-le-11-juillet-2026" },
+  { city: "L’Arbresle (69)", date: "01 juillet 2026", center: [45.83, 4.62], slug: "fode-kote-23-ans-disparu-l-arbresle-69-le-01-juillet-2026" },
+  { city: "Bégard (22)", date: "8 juillet 2026", center: [48.63, -3.3], slug: "veronique-briand-rouzic-57-ans-disparue-le-8-juillet-2026-begard-22" },
+  { city: "Plabennec (29)", date: "25 juin 2026", center: [48.5, -4.43], slug: "alan-creignou-54-ans-disparu-le-25-juin-2026-plabennec-29" },
+  { city: "Saint-Pierre (La Réunion)", date: "7 juillet 2026", center: [-21.34, 55.48], slug: "jean-antoine-severin-62-ans-disparu-le-7-juillet-2026-saint-pierre-ile-de-la-reunion" },
+  { city: "Thieu (Belgique)", date: "6 juillet 2026", slug: "michel-gaspard-61-ans-disparu-le-6-juillet-2026-thieu-belgique" },
+  { city: "La Guérinière (85)", date: "15 juin 2026", center: [46.97, -2.23], slug: "agathe-pin-nee-stephann-61-ans-disparu-le-15-juin-2026-la-gueriniere-85" },
+  { city: "Saint-Denis (93)", date: "20 mai 2026", center: [48.94, 2.36], slug: "roxane-andrieux-31-ans-disparue-saint-denis-93-le-20-mai-2026" },
+];
 
 function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] }) {
   return (
     <>
-      <strong>Disparition signalée à {notice.city}</strong>
-      <p>{notice.date} · Localisation approximative (commune)</p>
+      <strong>{notice.city}</strong>
+      <p>{notice.date}{notice.center ? " · Localisation approximative" : " · Avis consultable dans la liste"}</p>
       <a className="underline" href={"https://www.arpd.fr/fr/disparition-" + notice.slug}>Consulter l’avis sur l’ARPD</a>
     </>
   );
@@ -538,11 +593,11 @@ export default function Home() {
               {notices.map((notice) => (
                 <article key={notice.slug} className="space-y-1 rounded-md bg-gray-900 p-3">
                   <NoticeDetails notice={notice} />
-                  <button type="button" className="block text-violet-300 underline" onClick={() => {
-                    if (!map) return;
+                  {notice.center && <button type="button" className="block text-violet-300 underline" onClick={() => {
+                    if (!map || !notice.center) return;
                     map.getContainer().scrollIntoView({ block: "nearest" });
                     map.flyTo(notice.center, 12);
-                  }}>Voir sur la carte</button>
+                  }}>Voir sur la carte</button>}
                 </article>
               ))}
               <p className="flex flex-wrap gap-3">
@@ -651,7 +706,7 @@ export default function Home() {
                   </Popup>
                 </Marker>
               ))}
-            {icons && notices.map((notice) => (
+            {icons && notices.map((notice) => notice.center && (
               <Marker key={notice.slug} position={notice.center} icon={icons["Disparition inquiétante"]}>
                 <Popup><NoticeDetails notice={notice} /></Popup>
               </Marker>

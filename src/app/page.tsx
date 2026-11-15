@@ -52,8 +52,6 @@ const researchNotices = [
   { city: "Chanteloup-les-Vignes (78)", date: "30 octobre 2026", center: [48.98, 2.03], slug: "celie-ngameni-33-ans-disparue-depuis-le-30-octobre-2026-chanteloup-les-vignes-78" },
 ] satisfies { city: string; date: string; center?: [number, number]; slug: string }[];
 
-const CircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false });
-
 function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] }) {
   return (
     <>
@@ -643,11 +641,10 @@ export default function Home() {
                   </Popup>
                 </Marker>
               ))}
-            {notices.map((notice) => (
-              <CircleMarker key={notice.slug} center={notice.center} radius={10}
-                pathOptions={{ color: "#fff", weight: 2, fillColor: "#7c3aed", fillOpacity: 1 }}>
+            {icons && notices.map((notice) => (
+              <Marker key={notice.slug} position={notice.center} icon={icons["Disparition inquiétante"]}>
                 <Popup><NoticeDetails notice={notice} /></Popup>
-              </CircleMarker>
+              </Marker>
             ))}
           </MapContainer>
           <DepartmentStatistics map={map} />

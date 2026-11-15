@@ -149,8 +149,8 @@ const legendCategories = [
     "label": "Incendie volontaire"
   },
   {
-    "type": "Accident",
-    "label": "Accident"
+    "type": "Alerte communale",
+    "label": "Alerte communale"
   },
   {
     "type": "Trafic de stupéfiants",
@@ -229,7 +229,17 @@ type Incident = {
   media_type?: string | null;
 };
 
-const sourcedFires: Incident[] = [
+const publicReports: Incident[] = [
+  {
+    id: -101,
+    type: "Alerte communale",
+    incident_date: "2026-11-10",
+    address: "Corcieux (88430) · Repère à l’échelle de la commune",
+    latitude: 48.1722,
+    longitude: 6.87846,
+    description: "Vigilance : cambriolages et vols de véhicules après intrusion dans un domicile. La commune relaie un message de la brigade locale de gendarmerie signalant une recrudescence de ces faits dans plusieurs secteurs des Vosges. Le repère ne localise aucun cambriolage individuel.",
+    source_url: "https://www.intramuros.org/corcieux/actualites",
+  },
   {
     "id": -1,
     "type": "Incendie volontaire",
@@ -392,21 +402,22 @@ export default function Home() {
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const visibleFires = sourcedFires.filter((incident) =>
+  const visibleReports = publicReports.filter((incident) =>
     (!appliedSearch.sector || normalizeSearch(incident.address).includes(normalizeSearch(appliedSearch.sector))) &&
     (!appliedSearch.from || incident.incident_date! >= appliedSearch.from) &&
     (!appliedSearch.to || incident.incident_date! <= appliedSearch.to)
   );
-  const filteredIncidents = [...incidents, ...visibleFires].filter(
+  const filteredIncidents = [...incidents, ...visibleReports].filter(
     (incident) => !appliedSearch.type || incident.type === appliedSearch.type
   );
   const categoryTypes = new Set(legendCategories.map((category) => category.type));
   const extraCategories = [...new Set([...reportTypes, ...incidents.map((incident) => incident.type)])]
-    .filter((type) => !categoryTypes.has(type))
+    .filter((type) => type !== "Accident" && !categoryTypes.has(type))
     .sort((a, b) => a.localeCompare(b, "fr"))
     .map((type) => ({ type, label: type }));
   const categories = [...legendCategories, ...extraCategories];
   // Avis consultés le 15 novembre. Une nouvelle vérification est requise après le 21.
+  const mapCategory = showNotices && openCategory ? openCategory : appliedSearch.type;
   const notices = (!appliedSearch.type || appliedSearch.type === missingPersonType)
     && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
     ? researchNotices.filter((notice) => noticeMatches(notice, appliedSearch.sector, appliedSearch.from, appliedSearch.to))
@@ -483,14 +494,13 @@ export default function Home() {
     const firstNotice = criteria.type === missingPersonType && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
       ? researchNotices.find((notice) => notice.center && noticeMatches(notice, criteria.sector, criteria.from, criteria.to))
       : undefined;
-    const firstFire = (!criteria.type || criteria.type === "Incendie volontaire")
-      ? sourcedFires.find((incident) =>
+    const firstReport = publicReports.find((incident) =>
+          (!criteria.type || criteria.type === incident.type) &&
           (!criteria.sector || normalizeSearch(incident.address).includes(normalizeSearch(criteria.sector))) &&
           (!criteria.from || incident.incident_date! >= criteria.from) &&
-          (!criteria.to || incident.incident_date! <= criteria.to))
-      : undefined;
+          (!criteria.to || incident.incident_date! <= criteria.to));
     if (firstNotice?.center && map) map.flyTo(firstNotice.center, 12);
-    if (firstFire && !firstNotice) setSelectedPosition([firstFire.latitude, firstFire.longitude]);
+    if (firstReport && !firstNotice) setSelectedPosition([firstReport.latitude, firstReport.longitude]);
 
     try {
       const response = await fetch(`${API_URL}/incidents?${params.toString()}`);
@@ -500,7 +510,7 @@ export default function Home() {
       if (request !== searchRequest.current) return;
       setIncidents(data);
       const firstIncident = data.find((incident) => !criteria.type || incident.type === criteria.type);
-      if (!firstNotice && !firstFire && firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
+      if (!firstNotice && !firstReport && firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
     } catch {
       if (request === searchRequest.current) setSearchError(true);
     }
@@ -966,21 +976,6 @@ export default function Home() {
               })}
             </div>
           </section>
-          <details className="mb-4 rounded-lg border border-gray-700 p-3">
-            <summary className="cursor-pointer rounded-md bg-sky-900 px-3 py-2 font-bold text-white">
-              Alertes communales
-            </summary>
-            <div className="mt-3 space-y-3 text-sm text-gray-300">
-              <h2 className="font-semibold text-white">Hautes-Alpes</h2>
-              <p>Consultez les alertes et informations directement auprès de votre commune.</p>
-              <ul className="space-y-2">
-                <li><a className="underline" href="https://app.panneaupocket.com/ville/1326310230-le-glaizil-05800">Le Glaizil · PanneauPocket</a></li>
-                <li><a className="underline" href="https://app.panneaupocket.com/ville/867758662-saint-bonnet-en-champsaur-05500">Saint-Bonnet-en-Champsaur · PanneauPocket</a></li>
-                <li><a className="underline" href="https://www.mairie-saint-bonnet.net/vie-pratique/autres-services/gendarmerie">Saint-Bonnet-en-Champsaur · Alertes de la gendarmerie</a></li>
-                <li><a className="underline" href="https://www.ville-gap.fr/securite-publique/">Gap · Informations de sécurité publique</a></li>
-              </ul>
-            </div>
-          </details>
         </aside>
 
         <section className="order-1 md:order-2 flex-1 relative h-[58vh] md:h-full">
@@ -1005,7 +1000,7 @@ export default function Home() {
             )}
 
             {icons &&
-              filteredIncidents.map((incident) => (
+              filteredIncidents.filter((incident) => !mapCategory || incident.type === mapCategory).map((incident) => (
                 <Marker
                   key={incident.id}
                   position={[incident.latitude, incident.longitude]}
@@ -1037,7 +1032,7 @@ export default function Home() {
                   </Popup>
                 </Marker>
               ))}
-            {icons && notices.map((notice) => notice.center && (
+            {icons && (!mapCategory || mapCategory === missingPersonType) && notices.map((notice) => notice.center && (
               <Marker key={notice.slug} position={notice.center} icon={icons["Disparition inquiétante"]}>
                 <Popup><NoticeDetails notice={notice} /></Popup>
               </Marker>

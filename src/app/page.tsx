@@ -222,11 +222,95 @@ type Incident = {
   latitude: number;
   longitude: number;
   incident_date?: string | null;
+  source_url?: string;
   video_url?: string | null;
   incident_time?: string | null;
   media_url?: string | null;
   media_type?: string | null;
 };
+
+const sourcedFires: Incident[] = [
+  {
+    "id": -1,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-03-19",
+    "address": "École élémentaire Pressoir-Prompt, boulevard Kennedy, 91100 Corbeil-Essonnes",
+    "latitude": 48.586128,
+    "longitude": 2.476928,
+    "description": "Incendie criminel rapporté dans la nuit du 18 au 19 mars.",
+    "source_url": "https://www.leparisien.fr/essonne-91/corbeil-essonnes-trois-adolescents-arretes-apres-avoir-allume-un-feu-dans-une-ecole-20-03-2026-F5VJVFZE65B4PFTX5MLUMG2WME.php"
+  },
+  {
+    "id": -2,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-10-01",
+    "address": "Lycée Nelson-Mandela, 10 rue Pierre-Vidal-Naquet, Nantes",
+    "latitude": 47.208394,
+    "longitude": -1.532911,
+    "description": "Incendie du hall en marge des manifestations.",
+    "source_url": "https://www.tf1info.fr/justice-faits-divers/nantes-trois-personnes-interpellees-apres-l-incendie-du-lycee-nelson-mandela-en-marge-des-manifestations-2473615.html"
+  },
+  {
+    "id": -3,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-10-02",
+    "address": "Complexe sportif Salvador-Allende, rue du Bois-l’Évêque, 77380 Combs-la-Ville",
+    "latitude": 48.65733,
+    "longitude": 2.57952,
+    "description": "Incendie volontaire rapporté vers 3 h 30. Aucun lien établi avec les violences au lycée voisin.",
+    "source_url": "https://www.leparisien.fr/seine-et-marne-77/gymnase-incendie-volontairement-a-combs-la-ville-y-a-t-il-un-lien-avec-les-violences-au-lycee-02-10-2026-K3HRRGA3FVHJPP3SFIWQG3TPRQ.php"
+  },
+  {
+    "id": -4,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-10-02",
+    "address": "Collège François-Rabelais, 29 rue Saint-Bernard, 57000 Metz",
+    "latitude": 49.09748,
+    "longitude": 6.17161,
+    "description": "Incendie signalé en soirée. Piste volontaire privilégiée par le parquet.",
+    "source_url": "https://www.tf1info.fr/justice-faits-divers/metz-un-college-touche-par-un-incendie-le-preau-et-des-sanitaires-brules-2467796.html"
+  },
+  {
+    "id": -5,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-10-17",
+    "address": "Faculté de lettres, bâtiment B4 – Michel Serres, boulevard André-Siegfried, 76130 Mont-Saint-Aignan",
+    "latitude": 49.459531,
+    "longitude": 1.064317,
+    "description": "Pompiers alertés peu après 2 h 30. Origine volontaire privilégiée. Le repère situe le site de la faculté.",
+    "source_url": "https://www.univ-rouen.fr/actualites/communique-suite-a-lincendie-dun-batiment-sur-le-campus-de-mont-saint-aignan/"
+  },
+  {
+    "id": -6,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-10-17",
+    "address": "Hôtel de ville, 9 place Léon-Bétoulle, Limoges",
+    "latitude": 45.82642,
+    "longitude": 1.26031,
+    "description": "Incendie criminel en soirée, en marge des violences du 17 octobre.",
+    "source_url": "https://www.info.gouv.fr/actualite/incendie-a-limoges-point-presse-du-premier-ministre"
+  },
+  {
+    "id": -7,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-10-28",
+    "address": "Mairie du 6e arrondissement, 58 rue de Sèze, 69006 Lyon",
+    "latitude": 45.7682981,
+    "longitude": 4.8494225,
+    "description": "Origine volontaire rapportée par la presse. Incendie signalé vers 17 h 30.",
+    "source_url": "https://www.lyoncapitale.fr/actualite/un-feu-volontairement-allume-dans-la-mairie-du-6e-arrondissement-de-lyon"
+  },
+  {
+    "id": -8,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-11-05",
+    "address": "Lycée Marie-Louise Dissard Françoise, 5 boulevard Alain-Savary, 31170 Tournefeuille",
+    "latitude": 43.57669,
+    "longitude": 1.31268,
+    "description": "Incendie provoqué en début de journée, selon la préfecture, dans le contexte de la journée nationale d’action.",
+    "source_url": "https://www.haute-garonne.gouv.fr/sites/default/files/2026-11/20261105_cp_manif%20bilan_0.pdf"
+  }
+];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 const TURNSTILE_SITE_KEY = "0x4AAAAAADOpg7umNlyQBlo-";
@@ -268,7 +352,14 @@ export default function Home() {
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const filteredIncidents = incidents.filter((incident) => !appliedSearch.type || incident.type === appliedSearch.type);
+  const visibleFires = sourcedFires.filter((incident) =>
+    (!appliedSearch.sector || normalizeSearch(incident.address).includes(normalizeSearch(appliedSearch.sector))) &&
+    (!appliedSearch.from || incident.incident_date! >= appliedSearch.from) &&
+    (!appliedSearch.to || incident.incident_date! <= appliedSearch.to)
+  );
+  const filteredIncidents = [...incidents, ...visibleFires].filter(
+    (incident) => !appliedSearch.type || incident.type === appliedSearch.type
+  );
   const categoryTypes = new Set(legendCategories.map((category) => category.type));
   const extraCategories = [...new Set([...reportTypes, ...incidents.map((incident) => incident.type)])]
     .filter((type) => !categoryTypes.has(type))
@@ -352,7 +443,14 @@ export default function Home() {
     const firstNotice = criteria.type === missingPersonType && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
       ? researchNotices.find((notice) => notice.center && noticeMatches(notice, criteria.sector, criteria.from, criteria.to))
       : undefined;
+    const firstFire = (!criteria.type || criteria.type === "Incendie volontaire")
+      ? sourcedFires.find((incident) =>
+          (!criteria.sector || normalizeSearch(incident.address).includes(normalizeSearch(criteria.sector))) &&
+          (!criteria.from || incident.incident_date! >= criteria.from) &&
+          (!criteria.to || incident.incident_date! <= criteria.to))
+      : undefined;
     if (firstNotice?.center && map) map.flyTo(firstNotice.center, 12);
+    if (firstFire && !firstNotice) setSelectedPosition([firstFire.latitude, firstFire.longitude]);
 
     try {
       const response = await fetch(`${API_URL}/incidents?${params.toString()}`);
@@ -362,7 +460,7 @@ export default function Home() {
       if (request !== searchRequest.current) return;
       setIncidents(data);
       const firstIncident = data.find((incident) => !criteria.type || incident.type === criteria.type);
-      if (!firstNotice && firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
+      if (!firstNotice && !firstFire && firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
     } catch {
       if (request === searchRequest.current) setSearchError(true);
     }
@@ -874,6 +972,7 @@ export default function Home() {
                     {incident.address}
                     <br />
                     {incident.description}
+                    {incident.source_url && <div><a href={incident.source_url} target="_blank" rel="noopener noreferrer">Source publique</a></div>}
                     {incident.media_url && (
                       <>
                         <br />

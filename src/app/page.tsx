@@ -271,9 +271,8 @@ export default function Home() {
     .sort((a, b) => a.localeCompare(b, "fr"))
     .map((type) => ({ type, label: type }));
   const categories = [...legendCategories, ...extraCategories];
-  const showMissingPersons = showNotices && openCategory === missingPersonType;
   // Avis consultés le 15 novembre. Une nouvelle vérification est requise après le 21.
-  const notices = (showMissingPersons || appliedSearch.type === missingPersonType)
+  const notices = (!appliedSearch.type || appliedSearch.type === missingPersonType)
     && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
     ? researchNotices.filter((notice) => noticeMatches(notice, appliedSearch.sector, appliedSearch.from, appliedSearch.to))
     : [];
@@ -1097,7 +1096,7 @@ function LegendItem({ icon, label }: { icon: any; label: string }) {
       <img
         src={icon.options.iconUrl}
         alt={label}
-        className="w-5 h-5 md:w-6 md:h-6 object-contain"
+        className="h-auto w-12 shrink-0 object-contain"
       />
       <span>{label}</span>
     </div>

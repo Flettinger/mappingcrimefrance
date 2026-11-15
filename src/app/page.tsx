@@ -23,6 +23,8 @@ declare global {
   }
 }
 
+const DepartmentStatistics = dynamic(() => import("./DepartmentStatistics"), { ssr: false });
+
 const MapContainer = dynamic<any>(
   () => import("react-leaflet").then((m) => m.MapContainer),
   { ssr: false }
@@ -595,6 +597,7 @@ export default function Home() {
                 </Marker>
               ))}
           </MapContainer>
+          <DepartmentStatistics map={map} />
 
           {/* Légende desktop */}
 <div className="hidden md:block absolute top-6 right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-3 shadow-xl w-[220px]">

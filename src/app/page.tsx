@@ -172,7 +172,7 @@ const legendCategories = [
     "type": "Homicide",
     "label": "Homicide"
   }
-];
+].sort((a, b) => a.label.localeCompare(b.label, "fr"));
 const reportTypes = [
   "Vol simple",
   "Vol à main armée",
@@ -415,7 +415,7 @@ export default function Home() {
     .filter((type) => type !== "Accident" && !categoryTypes.has(type))
     .sort((a, b) => a.localeCompare(b, "fr"))
     .map((type) => ({ type, label: type }));
-  const categories = [...legendCategories, ...extraCategories];
+  const categories = [...legendCategories, ...extraCategories].sort((a, b) => a.label.localeCompare(b.label, "fr"));
   // Avis consultés le 15 novembre. Une nouvelle vérification est requise après le 21.
   const mapCategory = showNotices && openCategory ? openCategory : appliedSearch.type;
   const notices = (!appliedSearch.type || appliedSearch.type === missingPersonType)
@@ -891,7 +891,7 @@ export default function Home() {
             <button type="button" aria-expanded={showNotices} aria-controls="search-notices"
               className="w-full rounded-md bg-violet-800 px-3 py-2 text-left font-bold"
               onClick={() => setShowNotices((open) => !open)}>
-              Catégories
+              Toutes catégories
             </button>
             <div id="search-notices" hidden={!showNotices} className="mt-3 space-y-3 text-sm">
               {searchError && <p role="status" className="text-amber-200">Les signalements citoyens sont momentanément indisponibles.</p>}

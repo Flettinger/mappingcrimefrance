@@ -45,6 +45,25 @@ const Popup = dynamic<any>(
   { ssr: false }
 );
 
+const researchNotices = [
+  { city: "Saint-Pierre (La Réunion)", date: "5 novembre 2026", center: [-21.34, 55.48], slug: "laurent-imare-52-ans-disparu-saint-pierre-le-05-novembre-2026" },
+  { city: "Sathonay-Camp (69)", date: "3 novembre 2026", center: [45.82, 4.87], slug: "lois-marechal-61-ans-disparu-de-sathonay-camp-69-le-03-novembre-2026" },
+  { city: "Créteil (94)", date: "1er novembre 2026", center: [48.79, 2.46], slug: "alain-badin-70-ans-disparu-creteil-94-le-01-novembre-2026" },
+  { city: "Chanteloup-les-Vignes (78)", date: "30 octobre 2026", center: [48.98, 2.03], slug: "celie-ngameni-33-ans-disparue-depuis-le-30-octobre-2026-chanteloup-les-vignes-78" },
+] satisfies { city: string; date: string; center?: [number, number]; slug: string }[];
+
+const CircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false });
+
+function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] }) {
+  return (
+    <>
+      <strong>Disparition signalée à {notice.city}</strong>
+      <p>{notice.date} · Localisation approximative (commune)</p>
+      <a className="underline" href={"https://www.arpd.fr/fr/disparition-" + notice.slug}>Consulter l’avis sur l’ARPD</a>
+    </>
+  );
+}
+
 type Incident = {
   id: number;
   type: string;
@@ -61,6 +80,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 const TURNSTILE_SITE_KEY = "0x4AAAAAADOpg7umNlyQBlo-";
 
 export default function Home() {
+  const [showNotices, setShowNotices] = useState(false);
+  // Avis consultés le 15 novembre. Une nouvelle vérification est requise après le 21.
+  const notices = showNotices && Date.now() < Date.parse("2026-11-22T00:00:00+01:00") ? researchNotices : [];
   const [showForm, setShowForm] = useState(false);
   const [showAlertForm, setShowAlertForm] = useState(false);
 
@@ -496,18 +518,31 @@ export default function Home() {
 
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-170px)]">
         <aside className="order-2 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">
-          <details className="mb-4 rounded-lg border border-gray-700 p-3">
-            <summary className="cursor-pointer rounded-md bg-violet-800 px-3 py-2 font-bold text-white">
+          <section className="mb-4 rounded-lg border border-gray-700 p-3">
+            <button type="button" aria-expanded={showNotices} aria-controls="search-notices"
+              className="w-full rounded-md bg-violet-800 px-3 py-2 text-left font-bold"
+              onClick={() => setShowNotices((open) => !open)}>
               Avis de recherche
-            </summary>
-            <div className="mt-3 space-y-2 text-sm text-gray-300">
-              <p>Consultez les avis d’origine pour connaître le lieu indiqué et l’état de la recherche.</p>
-              <ul className="space-y-1">
-                <li><a className="underline" href="https://www.arpd.fr/fr/recherche-disparition-accueil">Avis publics de l’ARPD</a></li>
-                <li><a className="underline" href="https://www.116000enfantsdisparus.fr/avis-de-recherche/">116 000 Enfants Disparus</a></li>
-              </ul>
+            </button>
+            <div id="search-notices" hidden={!showNotices} className="mt-3 space-y-3 text-sm">
+              <p>Consultez la source pour connaître l’état de la recherche.</p>
+              {notices.length === 0 && <p>Aucun repère vérifié récemment.</p>}
+              {notices.map((notice) => (
+                <article key={notice.slug} className="space-y-1 rounded-md bg-gray-900 p-3">
+                  <NoticeDetails notice={notice} />
+                  <button type="button" className="block text-violet-300 underline" onClick={() => {
+                    if (!map) return;
+                    map.getContainer().scrollIntoView({ block: "nearest" });
+                    map.flyTo(notice.center, 12);
+                  }}>Voir sur la carte</button>
+                </article>
+              ))}
+              <p className="flex flex-wrap gap-3">
+                <a className="underline" href="https://www.arpd.fr/fr/recherche-disparition-accueil">Avis de l’ARPD</a>
+                <a className="underline" href="https://www.116000enfantsdisparus.fr/avis-de-recherche/">116 000 Enfants Disparus</a>
+              </p>
             </div>
-          </details>
+          </section>
           <h2 className="text-xl md:text-2xl font-bold mb-4">
             Incidents publiés ({incidents.length})
           </h2>
@@ -608,6 +643,12 @@ export default function Home() {
                   </Popup>
                 </Marker>
               ))}
+            {notices.map((notice) => (
+              <CircleMarker key={notice.slug} center={notice.center} radius={10}
+                pathOptions={{ color: "#fff", weight: 2, fillColor: "#7c3aed", fillOpacity: 1 }}>
+                <Popup><NoticeDetails notice={notice} /></Popup>
+              </CircleMarker>
+            ))}
           </MapContainer>
           <DepartmentStatistics map={map} />
 

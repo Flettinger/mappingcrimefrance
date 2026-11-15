@@ -309,6 +309,46 @@ const sourcedFires: Incident[] = [
     "longitude": 1.31268,
     "description": "Incendie provoqué en début de journée, selon la préfecture, dans le contexte de la journée nationale d’action.",
     "source_url": "https://www.haute-garonne.gouv.fr/sites/default/files/2026-11/20261105_cp_manif%20bilan_0.pdf"
+  },
+  {
+    "id": -9,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-06-11",
+    "address": "École Jean-de-la-Fontaine, plateau de la Croix-Vernailles, 91150 Étampes",
+    "latitude": 48.4482,
+    "longitude": 2.16942,
+    "description": "Incendie volontaire rapporté dans la nuit du 10 au 11 juin. La façade a été endommagée et la mairie a déposé plainte.",
+    "source_url": "https://www.leparisien.fr/essonne-91/ces-actes-sont-intolerables-a-etampes-lecole-jean-de-la-fontaine-une-nouvelle-fois-visee-par-un-incendie-12-06-2026-JUWPLV4GKBB25H2U7RKUDMM6UQ.php"
+  },
+  {
+    "id": -10,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-10-17",
+    "address": "Pavillon d’accueil de l’Office de tourisme, place Bellecour, 69002 Lyon",
+    "latitude": 45.75694,
+    "longitude": 4.83278,
+    "description": "Incendie volontaire confirmé par la Ville de Lyon, en début d’après-midi, en marge de la mobilisation du 17 octobre.",
+    "source_url": "https://www.lyon.fr/actualite/action-municipale/violences-du-17-octobre-la-ville-mobilisee"
+  },
+  {
+    "id": -11,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-11-06",
+    "address": "Lycée Édouard-Herriot, 6 place Edgar-Quinet, 69006 Lyon",
+    "latitude": 45.7657,
+    "longitude": 4.84511,
+    "description": "Vers 10 h, un feu volontaire allumé devant le lycée a atteint la porte d’entrée et endommagé la façade durant la mobilisation lycéenne.",
+    "source_url": "https://www.tf1info.fr/justice-faits-divers/video-une-stupeur-assez-extraordinaire-l-entree-du-lycee-edouard-herriot-en-flammes-a-lyon-le-maire-du-6-arrondissement-reagit-sur-lci-2474356.html"
+  },
+  {
+    "id": -12,
+    "type": "Incendie volontaire",
+    "incident_date": "2026-11-10",
+    "address": "Lycée Émile-Zola, avenue de l’Arc-de-Meyran, Aix-en-Provence",
+    "latitude": 43.511291,
+    "longitude": 5.460387,
+    "description": "Incendie tôt le matin. Piste volontaire privilégiée selon les informations publiées, sans lien établi avec le mouvement lycéen.",
+    "source_url": "https://www.leparisien.fr/faits-divers/des-individus-se-sont-introduits-et-ont-mis-le-feu-un-lycee-daix-en-provence-incendie-dans-la-nuit-la-piste-volontaire-privilegiee-10-11-2026-6T5MHPQPLJHLFE5SXLI4BFDCSA.php"
   }
 ];
 

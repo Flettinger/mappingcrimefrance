@@ -36,7 +36,7 @@ export async function getIcons(): Promise<IncidentIcons> {
   return Object.fromEntries(Object.entries(styles).map(([type, [color, line, secondLine]]) => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="76" height="36" viewBox="0 0 76 36">
       <path d="M9 2h58a7 7 0 0 1 7 7v10a7 7 0 0 1-7 7H46l-8 8-8-8H9a7 7 0 0 1-7-7V9a7 7 0 0 1 7-7Z" fill="${color}" stroke="#fff" stroke-width="2"/>
-      <text x="38" y="${secondLine ? 9 : 14}" fill="#fff" font-family="Arial,sans-serif" font-weight="bold" font-size="${secondLine ? 9 : 10.5}" text-anchor="middle" dominant-baseline="central">${line}${secondLine ? `<tspan x="38" y="19">${secondLine}</tspan>` : ""}</text>
+      <text x="38" y="${secondLine ? 9 : 14}" fill="#fff" font-family="Arial,sans-serif" font-weight="bold" font-size="${line === "CAMBRIOLAGE" ? 8 : secondLine ? 9 : 10.5}" text-anchor="middle" dominant-baseline="central">${line}${secondLine ? `<tspan x="38" y="19">${secondLine}</tspan>` : ""}</text>
     </svg>`;
 
     return [type, new Icon({

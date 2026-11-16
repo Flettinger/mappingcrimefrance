@@ -200,6 +200,18 @@ function normalizeSearch(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+const parisDate = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris" });
+
+function oldestVisibleDate() {
+  const [day, month, year] = parisDate.format(new Date()).split("/").map(Number);
+  const lastDay = new Date(Date.UTC(year - 1, month, 0)).getUTCDate();
+  return [year - 1, String(month).padStart(2, "0"), String(Math.min(day, lastDay)).padStart(2, "0")].join("-");
+}
+
+function isRecentIncident(incident: Incident, cutoff: string) {
+  return !incident.incident_date || incident.incident_date.slice(0, 10) >= cutoff;
+}
+
 function noticeMatches(notice: ResearchNotice, sector: string, from: string, to: string) {
   if (sector && !normalizeSearch(notice.city).includes(normalizeSearch(sector))) return false;
   if (!from && !to) return true;
@@ -473,13 +485,14 @@ export default function Home() {
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const cutoff = oldestVisibleDate();
   const visibleReports = publicReports.filter((incident) =>
     (!appliedSearch.sector || normalizeSearch(incident.address).includes(normalizeSearch(appliedSearch.sector))) &&
     (!appliedSearch.from || incident.incident_date! >= appliedSearch.from) &&
     (!appliedSearch.to || incident.incident_date! <= appliedSearch.to)
   );
   const filteredIncidents = [...incidents, ...visibleReports].filter(
-    (incident) => !appliedSearch.type || incident.type === appliedSearch.type
+    (incident) => isRecentIncident(incident, cutoff) && (!appliedSearch.type || incident.type === appliedSearch.type)
   );
   const categoryTypes = new Set(legendCategories.map((category) => category.type));
   const extraCategories = [...new Set([...reportTypes, ...incidents.map((incident) => incident.type)])]
@@ -565,7 +578,9 @@ export default function Home() {
     const firstNotice = criteria.type === missingPersonType && Date.now() < Date.parse("2026-11-22T00:00:00+01:00")
       ? researchNotices.find((notice) => notice.center && noticeMatches(notice, criteria.sector, criteria.from, criteria.to))
       : undefined;
+    const searchCutoff = oldestVisibleDate();
     const firstReport = publicReports.find((incident) =>
+          isRecentIncident(incident, searchCutoff) &&
           (!criteria.type || criteria.type === incident.type) &&
           (!criteria.sector || normalizeSearch(incident.address).includes(normalizeSearch(criteria.sector))) &&
           (!criteria.from || incident.incident_date! >= criteria.from) &&
@@ -580,7 +595,7 @@ export default function Home() {
       if (!Array.isArray(data)) throw new Error("Réponse de recherche invalide");
       if (request !== searchRequest.current) return;
       setIncidents(data);
-      const firstIncident = data.find((incident) => !criteria.type || incident.type === criteria.type);
+      const firstIncident = data.find((incident) => isRecentIncident(incident, searchCutoff) && (!criteria.type || incident.type === criteria.type));
       if (!firstNotice && !firstReport && firstIncident) setSelectedPosition([firstIncident.latitude, firstIncident.longitude]);
     } catch {
       if (request === searchRequest.current) setSearchError(true);

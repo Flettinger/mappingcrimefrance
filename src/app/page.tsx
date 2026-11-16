@@ -829,14 +829,14 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-black text-white md:flex md:h-screen md:flex-col md:overflow-hidden">
+    <main className="min-h-screen w-full bg-black text-white flex flex-col md:h-screen md:overflow-hidden">
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
         onLoad={() => setTurnstileLoaded(true)}
       />
 
-      <header className="bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:shrink-0 md:px-6">
+      <header className="order-2 md:order-none bg-gradient-to-r from-black via-[#111] to-black border-b border-gray-800 px-4 py-4 z-[2000] relative md:shrink-0 md:px-6">
         <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
           <div className="w-full md:w-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
@@ -953,8 +953,8 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex flex-col md:min-h-0 md:flex-1 md:flex-row">
-        <aside className="order-2 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">
+      <div className="contents md:flex md:min-h-0 md:flex-1 md:flex-row">
+        <aside className="order-3 md:order-1 w-full md:w-[410px] bg-black border-t md:border-t-0 md:border-r border-gray-800 p-4 max-h-[320px] md:max-h-none overflow-y-auto z-[1000]">
           <section className="mb-4 rounded-lg border border-gray-700 p-3">
             <button type="button" aria-expanded={showNotices} aria-controls="search-notices"
               className="w-full rounded-md bg-violet-800 px-3 py-2 text-left font-bold"
@@ -1046,7 +1046,7 @@ export default function Home() {
           </section>
         </aside>
 
-        <section className="order-1 md:order-2 flex-1 relative h-[58vh] md:h-full">
+        <section id="carte" className="order-1 md:order-2 relative h-[75svh] min-h-[320px] shrink-0 md:h-full md:min-h-0 md:flex-1">
           <MapContainer
             key={mapStyle}
             ref={setMap as any}

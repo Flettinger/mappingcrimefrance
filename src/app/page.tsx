@@ -505,7 +505,7 @@ export default function Home() {
     const timer = window.setInterval(() => setToday(parisDay()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
-  const recentFrom = new Date(today - 2 * 86_400_000).toISOString().slice(0, 10);
+  const recentFrom = new Date(today - 6 * 86_400_000).toISOString().slice(0, 10);
   const recentTo = new Date(today).toISOString().slice(0, 10);
   const visibleReports = publicReports.filter((incident) =>
     (!appliedSearch.sector || normalizeSearch(incident.address).includes(normalizeSearch(appliedSearch.sector))) &&
@@ -1159,7 +1159,7 @@ export default function Home() {
           {/* Légende desktop */}
 <div className="hidden md:block absolute top-6 right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-3 shadow-xl w-[220px]">
   <h3 className="font-bold mb-3 text-base">Légende</h3>
-  <p className="mb-3 text-xs">Liseré rouge : fait de moins de 3 jours</p>
+  <RecentIncidentLegend />
   <div className="space-y-2 text-xs">
     {icons && (
       legendCategories.map(({ type, label }) => <LegendItem key={type} icon={icons[type]} label={label} />)
@@ -1183,7 +1183,7 @@ export default function Home() {
     <div className="bg-gray-950 border border-gray-700 text-white rounded-2xl p-5 w-full max-w-sm max-h-[80vh] overflow-y-auto shadow-2xl">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold">Légende</h3>
-      <p className="mb-3 text-sm">Liseré rouge : fait de moins de 3 jours</p>
+      <RecentIncidentLegend />
         <button onClick={() => setShowLegend(false)} className="text-2xl">
           ✕
         </button>
@@ -1394,6 +1394,22 @@ export default function Home() {
         </div>
       )}
     </main>
+  );
+}
+
+function RecentIncidentLegend() {
+  return (
+    <div className="mb-3 flex items-center gap-2 text-xs">
+      <svg aria-hidden="true" viewBox="0 0 76 36" className="recent-crime-marker w-12 shrink-0">
+        <path
+          d="M9 2h58a7 7 0 0 1 7 7v10a7 7 0 0 1-7 7H46l-8 8-8-8H9a7 7 0 0 1-7-7V9a7 7 0 0 1 7-7Z"
+          fill="#45515f"
+          stroke="white"
+          strokeWidth="2"
+        />
+      </svg>
+      <span>Fait de moins d’une semaine</span>
+    </div>
   );
 }
 

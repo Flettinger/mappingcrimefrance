@@ -515,13 +515,13 @@ export default function Home() {
   const filteredIncidents = [...incidents, ...visibleReports].filter(
     (incident) => isRecentIncident(incident, cutoff) && (!appliedSearch.type || incident.type === appliedSearch.type)
   );
-  function markerIcon(incident: Incident, availableIcons: IncidentIcons) {
+  function markerAppearance(incident: Incident, availableIcons: IncidentIcons) {
     const date = incident.incident_date?.slice(0, 10);
     if (date && date >= recentFrom && date <= recentTo && !recentCrimeExcludedTypes.has(incident.type)) {
       const recentIcon = availableIcons[recentIconKey(incident.type)];
-      if (recentIcon) return recentIcon;
+      if (recentIcon) return { icon: recentIcon, zIndexOffset: 10000 };
     }
-    return availableIcons[incident.type] || availableIcons.Autre;
+    return { icon: availableIcons[incident.type] || availableIcons.Autre, zIndexOffset: 0 };
   }
 
   const categoryTypes = new Set(legendCategories.map((category) => category.type));
@@ -1120,7 +1120,7 @@ export default function Home() {
                 <Marker
                   key={incident.id}
                   position={[incident.latitude, incident.longitude]}
-                  icon={markerIcon(incident, icons)}
+                  {...markerAppearance(incident, icons)}
                 >
                   <Popup>
                     <strong>{incident.type}</strong>

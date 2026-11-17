@@ -43,6 +43,21 @@ export async function getIcons(): Promise<IncidentIcons> {
       <text x="38" y="${secondLine ? 9 : 14}" fill="#fff" font-family="Arial,sans-serif" font-weight="bold" font-size="${line === "CAMBRIOLAGE" ? 8 : secondLine ? 9 : 10.5}" text-anchor="middle" dominant-baseline="central">${line}${secondLine ? `<tspan x="38" y="19">${secondLine}</tspan>` : ""}</text>
     </svg>`;
 
+    // SVGs are rendered as images, so animate their text inside the SVG itself.
+    const recentSvg = svg.replace(
+      "<text ",
+      `<style>
+        text { fill: #ef233c; }
+        @media (prefers-reduced-motion: no-preference) {
+          text { animation: recent-label-pulse 1.6s ease-in-out infinite alternate; }
+        }
+        @keyframes recent-label-pulse {
+          from { fill: #fff; }
+          to { fill: #ef233c; }
+        }
+      </style><text `,
+    );
+
     const options = {
       iconUrl: "data:image/svg+xml," + encodeURIComponent(svg),
       iconSize: [76, 36] as [number, number],
@@ -52,7 +67,7 @@ export async function getIcons(): Promise<IncidentIcons> {
 
     return [
       [type, new Icon(options)],
-      [recentIconKey(type), new Icon({ ...options, className: "recent-crime-marker" })],
+      [recentIconKey(type), new Icon({ ...options, iconUrl: "data:image/svg+xml," + encodeURIComponent(recentSvg), className: "recent-crime-marker" })],
     ];
   }));
 }

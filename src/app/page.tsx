@@ -129,6 +129,10 @@ function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] })
 
 const legendCategories = [
   {
+    "type": "Dégradation",
+    "label": "Dégradation"
+  },
+  {
     "type": "Vol simple",
     "label": "Vol simple"
   },

@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-const API_URL = "https://mappingcrimefrance.onrender.com";
-const ADMIN_TOKEN = "CrimeFranceSecureAdmin2026!";
 
 type Subscriber = {
   id: number;
@@ -18,37 +16,39 @@ export default function SubscribersPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
 
   async function loadSubscribers() {
-    const response = await fetch(`${API_URL}/admin/subscribers`, {
-      headers: {
-        "x-admin-token": ADMIN_TOKEN,
-      },
-    });
+    const response = await fetch(`/api/admin/subscribers`);
 
+    if (response.status === 401) {
+      window.location.replace("/admin/login");
+      return;
+    }
+    if (!response.ok) {
+      alert("Administration indisponible");
+      return;
+    }
     const data = await response.json();
     setSubscribers(data);
   }
 
   async function confirmSubscriber(id: number) {
-    await fetch(`${API_URL}/admin/subscribers/${id}/confirm`, {
-      method: "PUT",
-      headers: {
-        "x-admin-token": ADMIN_TOKEN,
-      },
-    });
-
+    const response = await fetch(`/api/admin/subscribers/${id}/confirm`, { method: "PUT" });
+    if (!response.ok) {
+      if (response.status === 401) window.location.replace("/admin/login");
+      else alert("Action impossible");
+      return;
+    }
     loadSubscribers();
   }
 
   async function deleteSubscriber(id: number) {
     if (!confirm("Supprimer cet abonné ?")) return;
 
-    await fetch(`${API_URL}/admin/subscribers/${id}`, {
-      method: "DELETE",
-      headers: {
-        "x-admin-token": ADMIN_TOKEN,
-      },
-    });
-
+    const response = await fetch(`/api/admin/subscribers/${id}`, { method: "DELETE" });
+    if (!response.ok) {
+      if (response.status === 401) window.location.replace("/admin/login");
+      else alert("Action impossible");
+      return;
+    }
     loadSubscribers();
   }
 

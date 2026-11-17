@@ -505,7 +505,7 @@ export default function Home() {
     const timer = window.setInterval(() => setToday(parisDay()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
-  const recentFrom = new Date(today - 6 * 86_400_000).toISOString().slice(0, 10);
+  const recentFrom = new Date(today - 86_400_000).toISOString().slice(0, 10);
   const recentTo = new Date(today).toISOString().slice(0, 10);
   const visibleReports = publicReports.filter((incident) =>
     (!appliedSearch.sector || normalizeSearch(incident.address).includes(normalizeSearch(appliedSearch.sector))) &&
@@ -1408,7 +1408,7 @@ function RecentIncidentLegend() {
           strokeWidth="2"
         />
       </svg>
-      <span>Fait de moins d’une semaine</span>
+      <span>Fait de moins de deux jours</span>
     </div>
   );
 }

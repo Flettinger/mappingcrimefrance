@@ -24,3 +24,23 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Keep the outline visible even when motion is reduced. */
+.recent-crime-marker {
+  filter: drop-shadow(0 0 1px #ef233c) drop-shadow(0 0 2px #ef233c);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .recent-crime-marker {
+    animation: recent-crime-pulse 1.6s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes recent-crime-pulse {
+  from {
+    filter: drop-shadow(0 0 1px #ef233c80);
+  }
+  to {
+    filter: drop-shadow(0 0 2px #ef233c) drop-shadow(0 0 4px #ef233c);
+  }
+}

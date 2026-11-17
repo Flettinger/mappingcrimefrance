@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Script from "next/script";
 import "leaflet/dist/leaflet.css";
-import { getIcons, type IncidentIcons } from "../lib/icons";
+import { getIcons, recentIconKey, type IncidentIcons } from "../lib/icons";
 
 declare global {
   interface Window {
@@ -201,6 +201,13 @@ function normalizeSearch(value: string) {
 }
 
 const parisDate = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris" });
+
+const recentCrimeExcludedTypes = new Set([missingPersonType, "Alerte communale", "Accident", "Nuisances / tapage", "Autre"]);
+
+function parisDay() {
+  const [day, month, year] = parisDate.format(new Date()).split("/").map(Number);
+  return Date.UTC(year, month - 1, day);
+}
 
 function oldestVisibleDate() {
   const [day, month, year] = parisDate.format(new Date()).split("/").map(Number);
@@ -493,6 +500,13 @@ export default function Home() {
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const cutoff = oldestVisibleDate();
+  const [today, setToday] = useState(parisDay);
+  useEffect(() => {
+    const timer = window.setInterval(() => setToday(parisDay()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const recentFrom = new Date(today - 2 * 86_400_000).toISOString().slice(0, 10);
+  const recentTo = new Date(today).toISOString().slice(0, 10);
   const visibleReports = publicReports.filter((incident) =>
     (!appliedSearch.sector || normalizeSearch(incident.address).includes(normalizeSearch(appliedSearch.sector))) &&
     (!appliedSearch.from || incident.incident_date! >= appliedSearch.from) &&
@@ -501,6 +515,15 @@ export default function Home() {
   const filteredIncidents = [...incidents, ...visibleReports].filter(
     (incident) => isRecentIncident(incident, cutoff) && (!appliedSearch.type || incident.type === appliedSearch.type)
   );
+  function markerIcon(incident: Incident, availableIcons: IncidentIcons) {
+    const date = incident.incident_date?.slice(0, 10);
+    if (date && date >= recentFrom && date <= recentTo && !recentCrimeExcludedTypes.has(incident.type)) {
+      const recentIcon = availableIcons[recentIconKey(incident.type)];
+      if (recentIcon) return recentIcon;
+    }
+    return availableIcons[incident.type] || availableIcons.Autre;
+  }
+
   const categoryTypes = new Set(legendCategories.map((category) => category.type));
   const extraCategories = [...new Set([...reportTypes, ...incidents.map((incident) => incident.type)])]
     .filter((type) => type !== "Accident" && !categoryTypes.has(type))
@@ -1097,7 +1120,7 @@ export default function Home() {
                 <Marker
                   key={incident.id}
                   position={[incident.latitude, incident.longitude]}
-                  icon={icons[incident.type] || icons["Autre"]}
+                  icon={markerIcon(incident, icons)}
                 >
                   <Popup>
                     <strong>{incident.type}</strong>
@@ -1136,6 +1159,7 @@ export default function Home() {
           {/* Légende desktop */}
 <div className="hidden md:block absolute top-6 right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-3 shadow-xl w-[220px]">
   <h3 className="font-bold mb-3 text-base">Légende</h3>
+  <p className="mb-3 text-xs">Liseré rouge : fait de moins de 3 jours</p>
   <div className="space-y-2 text-xs">
     {icons && (
       legendCategories.map(({ type, label }) => <LegendItem key={type} icon={icons[type]} label={label} />)
@@ -1159,6 +1183,7 @@ export default function Home() {
     <div className="bg-gray-950 border border-gray-700 text-white rounded-2xl p-5 w-full max-w-sm max-h-[80vh] overflow-y-auto shadow-2xl">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold">Légende</h3>
+      <p className="mb-3 text-sm">Liseré rouge : fait de moins de 3 jours</p>
         <button onClick={() => setShowLegend(false)} className="text-2xl">
           ✕
         </button>

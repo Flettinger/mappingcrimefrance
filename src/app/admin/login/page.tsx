@@ -8,12 +8,20 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const router = useRouter();
 
-  function login() {
-   if (username === "flettinger" && password === "CrimeMapAdmin2026!") {
-      localStorage.setItem("admin_auth", "true");
-      router.push("/admin");
-    } else {
-      alert("Identifiants incorrects");
+  async function login() {
+    try {
+      const response = await fetch("/api/admin/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (response.ok) {
+        router.replace("/admin");
+      } else {
+        alert(response.status === 401 ? "Identifiants incorrects" : "Administration indisponible");
+      }
+    } catch {
+      alert("Administration indisponible");
     }
   }
 

@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import json
 import math
 import os
@@ -12,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Header, Query, Request, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, HttpUrl
@@ -23,7 +25,8 @@ from sqlalchemy.sql import func
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+ADMIN_SESSION_SECONDS = 4 * 60 * 60
 TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY")
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "ssl0.ovh.net")
@@ -454,10 +457,48 @@ def unsubscribe(subscriber_id: int):
     return {"message": "Désinscription confirmée"}
 
 
+class AdminLogin(BaseModel):
+    username: str
+    password: str
+
+
+def sign_admin_session(payload: str) -> str:
+    return hmac.new(
+        ADMIN_TOKEN.encode(),
+        b"mappingcrimefrance-admin-session:" + payload.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def require_admin(session: Optional[str]) -> None:
+    if len(ADMIN_TOKEN) < 32:
+        raise HTTPException(status_code=503, detail="Administration indisponible")
+    try:
+        expires, nonce, signature = (session or "").split(".", 2)
+        payload = f"{expires}.{nonce}"
+        if int(expires) > int(time.time()) and hmac.compare_digest(
+            signature.encode(), sign_admin_session(payload).encode()
+        ):
+            return
+    except ValueError:
+        pass
+    raise HTTPException(status_code=401, detail="Connexion requise")
+
+
+@app.post("/admin/session")
+def create_admin_session(credentials: AdminLogin):
+    if len(ADMIN_TOKEN) < 32:
+        raise HTTPException(status_code=503, detail="Administration indisponible")
+    password_matches = hmac.compare_digest(credentials.password.encode(), ADMIN_TOKEN.encode())
+    if credentials.username != "flettinger" or not password_matches:
+        raise HTTPException(status_code=401, detail="Identifiants incorrects")
+    payload = f"{int(time.time()) + ADMIN_SESSION_SECONDS}.{uuid.uuid4().hex}"
+    return {"session": f"{payload}.{sign_admin_session(payload)}", "max_age": ADMIN_SESSION_SECONDS}
+
+
 @app.get("/admin/incidents")
-def get_pending_incidents(x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def get_pending_incidents(x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
 
@@ -473,9 +514,8 @@ def get_pending_incidents(x_admin_token: str = Header(None)):
 
 
 @app.get("/admin/incidents/all")
-def get_all_admin_incidents(x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def get_all_admin_incidents(x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
     incidents = db.query(IncidentDB).order_by(IncidentDB.created_at.desc()).all()
@@ -485,9 +525,8 @@ def get_all_admin_incidents(x_admin_token: str = Header(None)):
 
 
 @app.put("/admin/incidents/{incident_id}/approve")
-def approve_incident(incident_id: int, x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def approve_incident(incident_id: int, x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
     incident = db.query(IncidentDB).filter(IncidentDB.id == incident_id).first()
@@ -507,9 +546,8 @@ def approve_incident(incident_id: int, x_admin_token: str = Header(None)):
 
 
 @app.put("/admin/incidents/{incident_id}/reject")
-def reject_incident(incident_id: int, x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def reject_incident(incident_id: int, x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
     incident = db.query(IncidentDB).filter(IncidentDB.id == incident_id).first()
@@ -526,9 +564,8 @@ def reject_incident(incident_id: int, x_admin_token: str = Header(None)):
 
 
 @app.delete("/admin/incidents/{incident_id}")
-def delete_incident(incident_id: int, x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def delete_incident(incident_id: int, x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
     incident = db.query(IncidentDB).filter(IncidentDB.id == incident_id).first()
@@ -544,9 +581,8 @@ def delete_incident(incident_id: int, x_admin_token: str = Header(None)):
     return {"message": "Incident supprimé"}
 
 @app.get("/admin/subscribers")
-def get_admin_subscribers(x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def get_admin_subscribers(x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
 
@@ -560,9 +596,8 @@ def get_admin_subscribers(x_admin_token: str = Header(None)):
     return subscribers
 
 @app.put("/admin/subscribers/{subscriber_id}/confirm")
-def admin_confirm_subscriber(subscriber_id: int, x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def admin_confirm_subscriber(subscriber_id: int, x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
     subscriber = db.query(SubscriberDB).filter(SubscriberDB.id == subscriber_id).first()
@@ -579,9 +614,8 @@ def admin_confirm_subscriber(subscriber_id: int, x_admin_token: str = Header(Non
 
 
 @app.delete("/admin/subscribers/{subscriber_id}")
-def admin_delete_subscriber(subscriber_id: int, x_admin_token: str = Header(None)):
-    if x_admin_token != ADMIN_TOKEN:
-        return {"error": "Accès refusé"}
+def admin_delete_subscriber(subscriber_id: int, x_admin_session: Optional[str] = Header(None)):
+    require_admin(x_admin_session)
 
     db = SessionLocal()
     subscriber = db.query(SubscriberDB).filter(SubscriberDB.id == subscriber_id).first()

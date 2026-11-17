@@ -17,72 +17,65 @@ type Incident = {
   media_type?: string | null;
 };
 
-const API_URL = "http://127.0.0.1:8000";
-const ADMIN_TOKEN = "CrimeFranceSecureAdmin2026!";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mappingcrimefrance.onrender.com";
 
 export default function AdminPage() {
   const router = useRouter();
   const [incidents, setIncidents] = useState<Incident[]>([]);
 
-  function logout() {
-    localStorage.removeItem("admin_auth");
-    router.push("/admin/login");
+  async function logout() {
+    await fetch("/api/admin/session", { method: "DELETE" });
+    router.replace("/admin/login");
   }
 
   async function loadIncidents() {
-    const response = await fetch(`${API_URL}/admin/incidents/all`, {
-      headers: {
-        "x-admin-token": ADMIN_TOKEN,
-      },
-    });
+    const response = await fetch(`/api/admin/incidents/all`);
 
+    if (response.status === 401) {
+      window.location.replace("/admin/login");
+      return;
+    }
+    if (!response.ok) {
+      alert("Administration indisponible");
+      return;
+    }
     const data = await response.json();
     setIncidents(data);
   }
 
   async function approveIncident(id: number) {
-    await fetch(`${API_URL}/admin/incidents/${id}/approve`, {
-      method: "PUT",
-      headers: {
-        "x-admin-token": ADMIN_TOKEN,
-      },
-    });
-
+    const response = await fetch(`/api/admin/incidents/${id}/approve`, { method: "PUT" });
+    if (!response.ok) {
+      if (response.status === 401) window.location.replace("/admin/login");
+      else alert("Action impossible");
+      return;
+    }
     loadIncidents();
   }
 
   async function rejectIncident(id: number) {
-    await fetch(`${API_URL}/admin/incidents/${id}/reject`, {
-      method: "PUT",
-      headers: {
-        "x-admin-token": ADMIN_TOKEN,
-      },
-    });
-
+    const response = await fetch(`/api/admin/incidents/${id}/reject`, { method: "PUT" });
+    if (!response.ok) {
+      if (response.status === 401) window.location.replace("/admin/login");
+      else alert("Action impossible");
+      return;
+    }
     loadIncidents();
   }
 
   async function deleteIncident(id: number) {
     if (!confirm("Voulez-vous vraiment supprimer cet incident ?")) return;
 
-    await fetch(`${API_URL}/admin/incidents/${id}`, {
-      method: "DELETE",
-      headers: {
-        "x-admin-token": ADMIN_TOKEN,
-      },
-    });
-
+    const response = await fetch(`/api/admin/incidents/${id}`, { method: "DELETE" });
+    if (!response.ok) {
+      if (response.status === 401) window.location.replace("/admin/login");
+      else alert("Action impossible");
+      return;
+    }
     loadIncidents();
   }
 
   useEffect(() => {
-    const isAuth = localStorage.getItem("admin_auth");
-
-    if (isAuth !== "true") {
-      router.push("/admin/login");
-      return;
-    }
-
     loadIncidents();
   }, []);
 

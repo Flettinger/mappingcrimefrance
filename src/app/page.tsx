@@ -129,6 +129,10 @@ function NoticeDetails({ notice }: { notice: (typeof researchNotices)[number] })
 
 const legendCategories = [
   {
+    "type": "Menaces",
+    "label": "Menaces"
+  },
+  {
     "type": "Dégradation",
     "label": "Dégradation"
   },
@@ -254,7 +258,7 @@ type Incident = {
 };
 
 const publicReports: Incident[] = [
-  {"id":-423,"type":"Alerte communale","incident_date":"2026-10-01","address":"Lycée François-Villon, avenue Pierre-de-Félice, Beaugency (45)","latitude":47.786365,"longitude":1.62025,"description":"Une vidéo tournée lors du blocus du lycée a conduit le parquet à ouvrir une enquête préliminaire pour apologie du terrorisme, selon Le Parisien. Trois mineurs ont ensuite été placés en garde à vue, selon l’AFP. Il s’agit de soupçons faisant l’objet d’investigations, sans condamnation établie par ces sources. Repère du lycée, emplacement exact de la scène non confirmé.","source_url":"https://www.leparisien.fr/loiret-45/loiret-des-lyceens-chantent-un-morceau-de-rap-faisant-reference-a-mohamed-merah-et-salah-abdeslam-le-parquet-ouvre-une-enquete-06-10-2026-5V7O6VILGVH7BBJVEK5IDP3AWY.php"},
+  {"id":-423,"type":"Menaces","incident_date":"2026-10-01","address":"Lycée François-Villon, avenue Pierre-de-Félice, Beaugency (45)","latitude":47.786365,"longitude":1.62025,"description":"Une vidéo tournée lors du blocus du lycée a conduit le parquet à ouvrir une enquête préliminaire pour apologie du terrorisme, selon Le Parisien. Trois mineurs ont ensuite été placés en garde à vue, selon l’AFP. Il s’agit de soupçons faisant l’objet d’investigations, sans condamnation établie par ces sources. Repère du lycée, emplacement exact de la scène non confirmé.","source_url":"https://www.leparisien.fr/loiret-45/loiret-des-lyceens-chantent-un-morceau-de-rap-faisant-reference-a-mohamed-merah-et-salah-abdeslam-le-parquet-ouvre-une-enquete-06-10-2026-5V7O6VILGVH7BBJVEK5IDP3AWY.php"},
   {"id":-416,"type":"Agression physique","incident_date":null,"address":"Campus universitaire d’Orléans-La Source — repère de secteur","latitude":47.84361,"longitude":1.93444,"description":"Une série de violences, tentatives d’extorsion et une agression sexuelle ont fait l’objet de plaintes, selon les informations policières relayées par ICI Orléans le 25 septembre 2026. Les plaintes ont été déposées entre le 18 et le 20 septembre ; les dates individuelles des faits ne sont pas établies ici. Repère du campus, sans désigner de résidence ou de bâtiment précis.","source_url":"https://www.shango.media/france-info-une-douzaine-de-plaintes-deposees-apres-des-agressions-sur-le-campus-de-luniversite-dorleans-11882132"},
   {"id":-417,"type":"Cambriolage","incident_date":"2026-10-01","address":"Rue de la République — Orléans (45)","latitude":47.90399,"longitude":1.90433,"description":"Un magasin de la rue de la République a été pillé le 1er octobre, selon un arrêté de la préfecture du Loiret reproduit par Pappers. Repère du secteur de la rue : le commerce et le numéro exact ne sont pas identifiés dans la source consultée.","source_url":"https://politique.pappers.fr/commune/document/dbc27a0189657528ab7e804d86b452fa"},
   {"id":-418,"type":"Dégradation","incident_date":"2026-10-17","address":"Centre-ville d’Orléans (45) — repère de secteur","latitude":47.9028,"longitude":1.9074,"description":"La mairie confirme des dégradations de vitrines et d’équipements publics, des feux de poubelles, des tirs de mortiers et des affrontements lors de la journée du 17 octobre. Cette fiche regroupe plusieurs incidents. Repère approximatif du centre-ville, qui ne désigne aucun commerce particulier.","source_url":"https://www.orleans.fr/fileadmin/news/document/orleans/20261022_arretes_municipaux/2026VOARR0624.pdf"},

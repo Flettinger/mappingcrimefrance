@@ -554,6 +554,8 @@ export default function Home() {
 
   const [subscriberEmail, setSubscriberEmail] = useState("");
   const [subscriberAddress, setSubscriberAddress] = useState("");
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState("");
 
   const [searchSector, setSearchSector] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -876,41 +878,57 @@ export default function Home() {
   }
 
   async function subscribeToAlerts() {
-    if (!subscriberEmail.trim() || !subscriberAddress.trim()) {
-      alert("Veuillez renseigner votre email et votre adresse.");
+    if (subscribing) return;
+    setSubscriptionMessage("");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(subscriberEmail.trim()) || !subscriberAddress.trim()) {
+      setSubscriptionMessage("Veuillez renseigner un email valide et votre adresse.");
       return;
     }
-
-    const { latitude, longitude, officialAddress } = await getAddressInfo(
-      subscriberAddress
-    );
-
-    const newSubscriber = {
-      email: subscriberEmail.trim(),
-      address: officialAddress,
-      latitude,
-      longitude,
-    };
-
-    const response = await fetch(`${API_URL}/subscribers`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newSubscriber),
-    });
-
-    const result = await response.json();
-
-    if (result.error) {
-      alert(result.error);
-      return;
+    setSubscribing(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 25000);
+    try {
+      const geocode = await fetch(
+        `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(subscriberAddress.trim())}&limit=1`,
+        { signal: controller.signal }
+      );
+      if (!geocode.ok) throw new Error("La recherche d’adresse est indisponible. Réessayez dans quelques instants.");
+      const data = await geocode.json();
+      const feature = data.features?.[0];
+      const coordinates = feature?.geometry?.coordinates;
+      if (!coordinates || !Number.isFinite(coordinates[0]) || !Number.isFinite(coordinates[1])) {
+        throw new Error("Adresse introuvable. Précisez la rue, le code postal et la commune.");
+      }
+      const response = await fetch(`${API_URL}/subscribers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          email: subscriberEmail.trim(),
+          address: feature.properties?.label || subscriberAddress.trim(),
+          latitude: coordinates[1],
+          longitude: coordinates[0],
+        }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.error || result?.detail) {
+        const detail = result?.error || result?.detail;
+        throw new Error(typeof detail === "string" ? detail : "L’inscription n’a pas pu être enregistrée. Réessayez dans quelques instants.");
+      }
+      if (!result) throw new Error("Réponse du serveur invalide. Impossible de confirmer l’inscription.");
+      setSubscriptionMessage("Votre demande a été enregistrée. Consultez votre messagerie et vos courriers indésirables pour la confirmation.");
+      setSubscriberEmail("");
+      setSubscriberAddress("");
+    } catch (error) {
+      setSubscriptionMessage(error instanceof Error && error.name === "AbortError"
+        ? "Le service met trop de temps à répondre. Réessayez dans quelques instants."
+        : error instanceof TypeError
+          ? "Connexion au service impossible. Réessayez dans quelques instants."
+          : error instanceof Error ? error.message : "L’inscription a échoué. Veuillez réessayer.");
+    } finally {
+      window.clearTimeout(timeout);
+      setSubscribing(false);
     }
-
-    alert("Un email de confirmation vous a été envoyé.");
-    setSubscriberEmail("");
-    setSubscriberAddress("");
-    setShowAlertForm(false);
   }
 
   function renderMedia(incident: Incident) {
@@ -1448,10 +1466,12 @@ export default function Home() {
 
             <button
               onClick={subscribeToAlerts}
-              className="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold"
+              disabled={subscribing}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 p-3 rounded-lg font-bold"
             >
-              {"M'inscrire aux alertes"}
+              {subscribing ? "Inscription en cours…" : "M’inscrire aux alertes"}
             </button>
+            <p role="status" aria-live="polite" className="mt-3 text-sm text-white">{subscriptionMessage}</p>
           </div>
         </div>
       )}

@@ -3,6 +3,8 @@ import hmac
 import json
 import math
 import os
+import re
+from functools import lru_cache
 import smtplib
 import time
 import urllib.parse
@@ -80,6 +82,10 @@ class SubscriberDB(Base):
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     radius_km = Column(Integer, default=10)
+    commune_code = Column(String(10), nullable=True)
+    commune_name = Column(Text, nullable=True)
+    commune_latitude = Column(Float, nullable=True)
+    commune_longitude = Column(Float, nullable=True)
     status = Column(String(20), default="pending")
     created_at = Column(TIMESTAMP, server_default=func.now())
 
@@ -89,6 +95,11 @@ Base.metadata.create_all(bind=engine)
 with engine.begin() as connection:
     connection.execute(text("ALTER TABLE incidents ADD COLUMN IF NOT EXISTS incident_date DATE"))
     connection.execute(text("ALTER TABLE incidents ADD COLUMN IF NOT EXISTS video_url TEXT"))
+    connection.execute(text("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS commune_code VARCHAR(10)"))
+    connection.execute(text("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS commune_name TEXT"))
+    connection.execute(text("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS commune_latitude DOUBLE PRECISION"))
+    connection.execute(text("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS commune_longitude DOUBLE PRECISION"))
+
 
 
 app.add_middleware(
@@ -380,6 +391,79 @@ def create_incident(incident: IncidentCreate, request: Request):
     return new_incident
 
 
+
+
+@lru_cache(maxsize=110)
+def department_commune_shapes(department):
+    # Only a public department code is sent; never a subscriber address or location.
+    query = "fields=nom,code,centre,contour&format=json&geometry=contour"
+    with urllib.request.urlopen(
+        "https://geo.api.gouv.fr/departements/" + department + "/communes?" + query, timeout=15
+    ) as response:
+        return json.load(response)
+
+
+def point_in_ring(x, y, ring):
+    inside = False
+    for i, a in enumerate(ring):
+        b = ring[i - 1]
+        if (a[1] > y) != (b[1] > y):
+            crossing = (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]
+            if x < crossing:
+                inside = not inside
+    return inside
+
+
+def commune_contains(commune, longitude, latitude):
+    geometry = commune.get("contour", {})
+    coordinates = geometry.get("coordinates", [])
+    polygons = [coordinates] if geometry.get("type") == "Polygon" else coordinates if geometry.get("type") == "MultiPolygon" else []
+    return any(polygon and point_in_ring(longitude, latitude, polygon[0])
+               and not any(point_in_ring(longitude, latitude, hole) for hole in polygon[1:])
+               for polygon in polygons)
+
+
+@app.get("/subscriber-communes")
+def subscriber_communes():
+    """Public aggregate only; commune matching runs locally on the server."""
+    db = SessionLocal()
+    try:
+        subscribers = db.query(SubscriberDB).filter(SubscriberDB.status == "confirmed").all()
+        groups = {}
+        for subscriber in subscribers:
+            if not subscriber.commune_code:
+                postal_codes = re.findall(r"\b\d{5}\b", subscriber.address)
+                if not postal_codes:
+                    continue
+                postal = postal_codes[-1]
+                department = postal[:3] if postal.startswith(("97", "98")) else postal[:2]
+                departments = ["2A", "2B"] if department == "20" else [department]
+                try:
+                    matches = [commune for dep in departments for commune in department_commune_shapes(dep)
+                               if commune_contains(commune, subscriber.longitude, subscriber.latitude)]
+                    if len(matches) != 1:
+                        continue
+                    commune = matches[0]
+                    coordinates = commune["centre"]["coordinates"]
+                    subscriber.commune_code = commune["code"]
+                    subscriber.commune_name = commune["nom"]
+                    subscriber.commune_latitude = coordinates[1]
+                    subscriber.commune_longitude = coordinates[0]
+                except Exception:
+                    continue
+            code = subscriber.commune_code
+            if code not in groups:
+                groups[code] = {
+                    "code": code, "name": subscriber.commune_name, "count": 0,
+                    "latitude": subscriber.commune_latitude,
+                    "longitude": subscriber.commune_longitude,
+                }
+            groups[code]["count"] += 1
+        db.commit()
+        return sorted(groups.values(), key=lambda group: group["code"])
+    finally:
+        db.close()
+
 @app.post("/subscribers")
 def create_subscriber(subscriber: SubscriberCreate):
     db = SessionLocal()
@@ -388,6 +472,10 @@ def create_subscriber(subscriber: SubscriberCreate):
     existing = db.query(SubscriberDB).filter(SubscriberDB.email == email).first()
 
     if existing:
+        existing.commune_code = None
+        existing.commune_name = None
+        existing.commune_latitude = None
+        existing.commune_longitude = None
         existing.address = subscriber.address
         existing.latitude = subscriber.latitude
         existing.longitude = subscriber.longitude

@@ -586,7 +586,40 @@ export default function Home() {
   const widgetIdRef = useRef<string | null>(null);
 
   const [subscriberEmail, setSubscriberEmail] = useState("");
-  const [subscriberAddress, setSubscriberAddress] = useState("");
+  const [subscriberNumber, setSubscriberNumber] = useState("");
+  const [subscriberStreet, setSubscriberStreet] = useState("");
+  const [subscriberPostcode, setSubscriberPostcode] = useState("");
+  const [subscriberCity, setSubscriberCity] = useState("");
+  const [subscriberCities, setSubscriberCities] = useState<string[]>([]);
+  const [cityLookupMessage, setCityLookupMessage] = useState("");
+  const [subscriberRadius, setSubscriberRadius] = useState(10);
+  const subscriberAddress = [subscriberNumber.trim(), subscriberStreet.trim(), subscriberPostcode, subscriberCity.trim()].filter(Boolean).join(" ");
+
+  useEffect(() => {
+    setSubscriberCities([]);
+    setSubscriberCity("");
+    setCityLookupMessage("");
+    if (!/^\d{5}$/.test(subscriberPostcode)) return;
+    const controller = new AbortController();
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setCityLookupMessage("Recherche des communes…");
+      try {
+        const response = await fetch(`https://geo.api.gouv.fr/communes?codePostal=${subscriberPostcode}&fields=nom&format=json`, { signal: controller.signal });
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error();
+        if (!active) return;
+        const names = [...new Set<string>(data.map((city: { nom: string }) => city.nom))].sort((a, b) => a.localeCompare(b, "fr"));
+        setSubscriberCities(names);
+        if (names.length === 1) setSubscriberCity(names[0]);
+        setCityLookupMessage(names.length > 1 ? "Plusieurs communes : choisissez votre ville." : names.length ? "" : "Commune non trouvée : saisissez votre ville.");
+      } catch {
+        if (active) setCityLookupMessage("Recherche indisponible : saisissez votre ville.");
+      }
+    }, 300);
+    return () => { active = false; controller.abort(); window.clearTimeout(timer); };
+  }, [subscriberPostcode]);
   const [subscribing, setSubscribing] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState("");
 
@@ -913,8 +946,8 @@ export default function Home() {
   async function subscribeToAlerts() {
     if (subscribing) return;
     setSubscriptionMessage("");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(subscriberEmail.trim()) || !subscriberAddress.trim()) {
-      setSubscriptionMessage("Veuillez renseigner un email valide et votre adresse.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(subscriberEmail.trim()) || !subscriberStreet.trim() || !/^\d{5}$/.test(subscriberPostcode) || !subscriberCity.trim()) {
+      setSubscriptionMessage("Veuillez renseigner un email valide, la rue, un code postal à 5 chiffres et la ville.");
       return;
     }
     setSubscribing(true);
@@ -938,6 +971,7 @@ export default function Home() {
         signal: controller.signal,
         body: JSON.stringify({
           email: subscriberEmail.trim(),
+          radius_km: subscriberRadius,
           address: feature.properties?.label || subscriberAddress.trim(),
           latitude: coordinates[1],
           longitude: coordinates[0],
@@ -951,7 +985,10 @@ export default function Home() {
       if (!result) throw new Error("Réponse du serveur invalide. Impossible de confirmer l’inscription.");
       setSubscriptionMessage("Votre demande a été enregistrée. Consultez votre messagerie et vos courriers indésirables pour la confirmation.");
       setSubscriberEmail("");
-      setSubscriberAddress("");
+      setSubscriberNumber("");
+      setSubscriberStreet("");
+      setSubscriberPostcode("");
+      setSubscriberCity("");
     } catch (error) {
       setSubscriptionMessage(error instanceof Error && error.name === "AbortError"
         ? "Le service met trop de temps à répondre. Réessayez dans quelques instants."
@@ -1463,7 +1500,7 @@ export default function Home() {
 
       {showAlertForm && (
         <div className="fixed inset-0 bg-black/70 z-[3000] flex items-center justify-center p-3 md:p-6">
-          <div className="bg-gray-950 border border-gray-700 rounded-xl w-full max-w-lg p-4 md:p-6">
+          <div className="bg-gray-950 border border-gray-700 rounded-xl w-full max-w-lg p-4 md:p-6 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
               <h2 className="text-xl md:text-2xl font-bold text-blue-500">
                 Alertes incidents
@@ -1479,7 +1516,7 @@ export default function Home() {
 
             <p className="text-sm text-gray-300 mb-4">
               Recevez une alerte si un incident validé est signalé dans un rayon
-              de 10 km autour de votre adresse.
+              de 1 à 10 km autour de votre adresse, selon votre choix.
             </p>
 
             <input
@@ -1490,12 +1527,31 @@ export default function Home() {
               className="w-full p-3 rounded bg-black border border-gray-700 mb-4"
             />
 
-            <input
-              placeholder="Adresse à surveiller"
-              value={subscriberAddress}
-              onChange={(e) => setSubscriberAddress(e.target.value)}
-              className="w-full p-3 rounded bg-black border border-gray-700 mb-4"
-            />
+            <label className="block mb-3">Numéro de rue
+              <input value={subscriberNumber} onChange={(e) => setSubscriberNumber(e.target.value)} autoComplete="address-line2" placeholder="Ex. 12 bis" className="w-full p-3 rounded bg-black border border-gray-700 mt-1" />
+            </label>
+            <label className="block mb-3">Rue
+              <input value={subscriberStreet} onChange={(e) => setSubscriberStreet(e.target.value)} autoComplete="address-line1" placeholder="Nom de la rue" className="w-full p-3 rounded bg-black border border-gray-700 mt-1" />
+            </label>
+            <label className="block mb-3">Code postal
+              <input value={subscriberPostcode} onChange={(e) => { setSubscriberPostcode(e.target.value.replace(/\D/g, "").slice(0, 5)); setSubscriberCity(""); setSubscriberCities([]); }} inputMode="numeric" maxLength={5} autoComplete="postal-code" placeholder="Ex. 05000" className="w-full p-3 rounded bg-black border border-gray-700 mt-1" />
+            </label>
+            <label className="block mb-3">Ville
+              {subscriberCities.length > 1 ? (
+                <select value={subscriberCity} onChange={(e) => setSubscriberCity(e.target.value)} autoComplete="address-level2" className="w-full p-3 rounded bg-black border border-gray-700 mt-1">
+                  <option value="">Choisissez votre ville</option>
+                  {subscriberCities.map((city) => <option key={city} value={city}>{city}</option>)}
+                </select>
+              ) : (
+                <input value={subscriberCity} onChange={(e) => setSubscriberCity(e.target.value)} autoComplete="address-level2" placeholder="Votre ville" className="w-full p-3 rounded bg-black border border-gray-700 mt-1" />
+              )}
+            </label>
+            <p role="status" className="text-sm text-gray-300 mb-3">{cityLookupMessage}</p>
+            <label className="block mb-4">Rayon d’alerte
+              <select value={subscriberRadius} onChange={(e) => setSubscriberRadius(Number(e.target.value))} className="w-full p-3 rounded bg-black border border-gray-700 mt-1">
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((radius) => <option key={radius} value={radius}>{radius} km</option>)}
+              </select>
+            </label>
 
             <button
               onClick={subscribeToAlerts}

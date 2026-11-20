@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, Field
 from sqlalchemy import Column, Date, Float, Integer, String, Text, TIMESTAMP, Time, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
@@ -122,6 +122,7 @@ class IncidentCreate(BaseModel):
 
 
 class SubscriberCreate(BaseModel):
+    radius_km: int = Field(default=10, ge=1, le=10)
     email: str
     address: str
     latitude: float
@@ -192,7 +193,7 @@ def send_confirmation_email(subscriber):
     body = f"""
 Bonjour,
 
-Vous avez demandé à recevoir les alertes MappingCrimeFrance dans un rayon de 10 km autour de :
+Vous avez demandé à recevoir les alertes MappingCrimeFrance dans un rayon de {subscriber.radius_km} km autour de :
 
 {subscriber.address}
 
@@ -209,7 +210,7 @@ MappingCrimeFrance
     send_email(subscriber.email, subject, body)
 
 
-def send_alert_email(to_email: str, incident, distance: float, subscriber_id: int):
+def send_alert_email(to_email: str, incident, distance: float, subscriber_id: int, radius_km: int = 10):
     unsubscribe_link = f"{FRONTEND_URL}/unsubscribe/{subscriber_id}"
 
     incident_time_text = ""
@@ -228,7 +229,7 @@ Type d'incident : {incident.type}
 Description : {incident.description}
 Distance estimée : {round(distance, 2)} km
 
-Vous recevez cet email car vous êtes inscrit aux alertes MappingCrimeFrance dans un rayon de 10 km.
+Vous recevez cet email car vous êtes inscrit aux alertes MappingCrimeFrance dans un rayon de {radius_km} km.
 
 Pour vous désinscrire :
 {unsubscribe_link}
@@ -264,6 +265,7 @@ def notify_subscribers(incident):
                     incident,
                     distance,
                     subscriber.id,
+                    subscriber.radius_km,
                 )
                 print(f"Email d'alerte envoyé à {subscriber.email}")
             except Exception as error:
@@ -389,7 +391,7 @@ def create_subscriber(subscriber: SubscriberCreate):
         existing.address = subscriber.address
         existing.latitude = subscriber.latitude
         existing.longitude = subscriber.longitude
-        existing.radius_km = 10
+        existing.radius_km = subscriber.radius_km
         existing.status = "pending"
 
         db.commit()
@@ -408,7 +410,7 @@ def create_subscriber(subscriber: SubscriberCreate):
         address=subscriber.address,
         latitude=subscriber.latitude,
         longitude=subscriber.longitude,
-        radius_km=10,
+        radius_km=subscriber.radius_km,
         status="pending",
     )
 

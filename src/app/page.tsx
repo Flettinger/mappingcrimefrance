@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
 import "leaflet/dist/leaflet.css";
 import { getIcons, recentIconKey, type IncidentIcons } from "../lib/icons";
@@ -558,6 +559,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 const TURNSTILE_SITE_KEY = "0x4AAAAAADOpg7umNlyQBlo-";
 
 export default function Home() {
+  const router = useRouter();
   const [showNotices, setShowNotices] = useState(false);
   const [openCategory, setOpenCategory] = useState("");
   const [searchType, setSearchType] = useState("");
@@ -1010,7 +1012,7 @@ export default function Home() {
         throw new Error(typeof detail === "string" ? detail : "L’inscription n’a pas pu être enregistrée. Réessayez dans quelques instants.");
       }
       if (!result) throw new Error("Réponse du serveur invalide. Impossible de confirmer l’inscription.");
-      setSubscriptionMessage("Votre demande a été enregistrée. Consultez votre messagerie et vos courriers indésirables pour la confirmation.");
+      router.push("/alertes/demande-enregistree");
       setSubscriberEmail("");
       setSubscriberNumber("");
       setSubscriberStreet("");

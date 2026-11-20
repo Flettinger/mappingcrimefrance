@@ -34,7 +34,7 @@ export default function SubscribersPage() {
     const response = await fetch(`/api/admin/subscribers/${id}/confirm`, { method: "PUT" });
     if (!response.ok) {
       if (response.status === 401) window.location.replace("/admin/login");
-      else alert("Action impossible");
+      else alert("La validation et l’envoi du mail ont échoué. L’inscription reste en attente : réessayez.");
       return;
     }
     loadSubscribers();
@@ -94,7 +94,7 @@ export default function SubscribersPage() {
                         : "text-yellow-400 font-bold"
                     }
                   >
-                    {subscriber.status}
+                    {subscriber.status === "confirmed" ? "Validée" : "En attente de validation"}
                   </span>
                 </td>
 

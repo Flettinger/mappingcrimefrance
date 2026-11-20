@@ -150,7 +150,7 @@ def send_email(to_email: str, subject: str, body: str):
     message["From"] = EMAIL_USER
     message["To"] = to_email
 
-    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=15) as server:
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASSWORD)
         server.sendmail(EMAIL_USER, [to_email], message.as_string())
@@ -196,28 +196,24 @@ def calculate_distance_km(lat1, lon1, lat2, lon2):
     return radius * c
 
 
-def send_confirmation_email(subscriber):
-    confirmation_link = f"{FRONTEND_URL}/confirm-subscription/{subscriber.id}"
-
-    subject = "Confirmez votre inscription MappingCrimeFrance"
-
+def send_subscription_approved_email(subscriber):
+    subject = "Votre inscription aux alertes Mapping Crime France est validée"
     body = f"""
 Bonjour,
 
-Vous avez demandé à recevoir les alertes MappingCrimeFrance dans un rayon de {subscriber.radius_km} km autour de :
+Votre inscription aux alertes Mapping Crime France a été validée par un administrateur.
 
+Vos alertes sont désormais actives dans un rayon de {subscriber.radius_km} km autour de :
 {subscriber.address}
 
-Pour confirmer votre inscription, cliquez sur le lien suivant :
+Vous recevrez un email lorsqu’un incident sera validé dans cette zone.
 
-{confirmation_link}
-
-Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
+Pour vous désinscrire :
+{FRONTEND_URL}/unsubscribe/{subscriber.id}
 
 Cordialement,
-MappingCrimeFrance
+Mapping Crime France
 """
-
     send_email(subscriber.email, subject, body)
 
 
@@ -485,13 +481,9 @@ def create_subscriber(subscriber: SubscriberCreate):
         db.commit()
         db.refresh(existing)
 
-        try:
-            send_confirmation_email(existing)
-        except Exception as error:
-            print("Erreur email confirmation :", error)
 
         db.close()
-        return {"message": "Email de confirmation envoyé"}
+        return {"message": "Demande enregistrée, en attente de validation par un administrateur", "status": "pending"}
 
     new_subscriber = SubscriberDB(
         email=email,
@@ -506,29 +498,17 @@ def create_subscriber(subscriber: SubscriberCreate):
     db.commit()
     db.refresh(new_subscriber)
 
-    try:
-        send_confirmation_email(new_subscriber)
-    except Exception as error:
-        print("Erreur email confirmation :", error)
 
     db.close()
-    return {"message": "Email de confirmation envoyé"}
+    return {"message": "Demande enregistrée, en attente de validation par un administrateur", "status": "pending"}
 
 
 @app.put("/subscribers/{subscriber_id}/confirm")
 def confirm_subscriber(subscriber_id: int):
-    db = SessionLocal()
-    subscriber = db.query(SubscriberDB).filter(SubscriberDB.id == subscriber_id).first()
-
-    if not subscriber:
-        db.close()
-        return {"error": "Abonnement introuvable"}
-
-    subscriber.status = "confirmed"
-    db.commit()
-    db.close()
-
-    return {"message": "Inscription confirmée"}
+    raise HTTPException(
+        status_code=410,
+        detail="L’inscription doit être validée par un administrateur. Un email sera envoyé après validation.",
+    )
 
 
 @app.delete("/subscribers/{subscriber_id}/unsubscribe")
@@ -690,17 +670,28 @@ def admin_confirm_subscriber(subscriber_id: int, x_admin_session: Optional[str] 
     require_admin(x_admin_session)
 
     db = SessionLocal()
-    subscriber = db.query(SubscriberDB).filter(SubscriberDB.id == subscriber_id).first()
+    try:
+        subscriber = db.query(SubscriberDB).filter(SubscriberDB.id == subscriber_id).with_for_update().first()
+        if not subscriber:
+            raise HTTPException(status_code=404, detail="Abonné introuvable")
+        if subscriber.status == "confirmed":
+            return {"message": "Abonné déjà confirmé"}
 
-    if not subscriber:
+        if not EMAIL_USER or not EMAIL_PASSWORD:
+            raise HTTPException(status_code=503, detail="Envoi du mail indisponible. L’inscription reste en attente.")
+        try:
+            send_subscription_approved_email(subscriber)
+        except Exception:
+            raise HTTPException(status_code=503, detail="Le mail de validation n’a pas pu être envoyé. Réessayez.")
+
+        subscriber.status = "confirmed"
+        db.commit()
+        return {"message": "Abonné confirmé et email de validation envoyé"}
+    except Exception:
+        db.rollback()
+        raise
+    finally:
         db.close()
-        return {"error": "Abonné introuvable"}
-
-    subscriber.status = "confirmed"
-    db.commit()
-    db.close()
-
-    return {"message": "Abonné confirmé"}
 
 
 @app.delete("/admin/subscribers/{subscriber_id}")

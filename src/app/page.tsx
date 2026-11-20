@@ -585,6 +585,33 @@ export default function Home() {
   const captchaRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
 
+  const [subscriberCommunes, setSubscriberCommunes] = useState<Array<{ code: string; name: string; count: number; latitude: number; longitude: number }>>([]);
+  const [subscriberIcons, setSubscriberIcons] = useState<Record<string, any>>({});
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    async function refresh() {
+      try {
+        const response = await fetch(`${API_URL}/subscriber-communes`, { signal: controller.signal });
+        if (!response.ok) return;
+        const groups = await response.json();
+        if (!Array.isArray(groups)) return;
+        const L = await import("leaflet");
+        const valid = groups.filter((group: any) => typeof group.code === "string" && typeof group.name === "string" && Number.isInteger(group.count) && group.count > 0 && Number.isFinite(group.latitude) && Number.isFinite(group.longitude));
+        if (!active) return;
+        setSubscriberCommunes(valid);
+        setSubscriberIcons(Object.fromEntries(valid.map((group: any) => [group.code, L.divIcon({
+          className: "",
+          html: `<div style="width:38px;height:38px;border-radius:50%;background:#2563eb;color:white;border:3px solid white;box-shadow:0 2px 8px #0008;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px" aria-label="${group.count} abonnés aux alertes">${group.count}</div>`,
+          iconSize: [38, 38], iconAnchor: [19, 19],
+        })])));
+      } catch { /* Keep existing counts during a temporary network failure. */ }
+    }
+    refresh();
+    const timer = window.setInterval(refresh, 60000);
+    return () => { active = false; controller.abort(); window.clearInterval(timer); };
+  }, []);
+
   const [subscriberEmail, setSubscriberEmail] = useState("");
   const [subscriberNumber, setSubscriberNumber] = useState("");
   const [subscriberStreet, setSubscriberStreet] = useState("");
@@ -1303,6 +1330,11 @@ export default function Home() {
                 <Popup><NoticeDetails notice={notice} /></Popup>
               </Marker>
             ))}
+            {subscriberCommunes.map((commune) => subscriberIcons[commune.code] && (
+              <Marker key={`subscribers-${commune.code}`} position={[commune.latitude, commune.longitude]} icon={subscriberIcons[commune.code]}>
+                <Popup><strong>{commune.name}</strong><p>{commune.count} abonné{commune.count > 1 ? "s" : ""} confirmé{commune.count > 1 ? "s" : ""} aux alertes</p><p>Repère au centre de la commune.</p></Popup>
+              </Marker>
+            ))}
           </MapContainer>
           <DepartmentStatistics map={map} />
 
@@ -1310,6 +1342,7 @@ export default function Home() {
 <div className="hidden md:block absolute top-6 right-6 z-[1000] bg-black/90 border border-gray-700 rounded-xl p-3 shadow-xl w-[220px]">
   <h3 className="font-bold mb-3 text-base">Légende</h3>
   <RecentIncidentLegend />
+  <p className="text-xs mb-3">🔵 Nombre d’abonnés confirmés aux alertes par commune</p>
   <div className="space-y-2 text-xs">
     {icons && (
       legendCategories.map(({ type, label }) => <LegendItem key={type} icon={icons[type]} label={label} />)
